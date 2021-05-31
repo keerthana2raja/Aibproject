@@ -5,11 +5,11 @@
             <mat-cell *matCellDef="let element"> {{element.name}} </mat-cell>
         </ng-container>
         <ng-container matColumnDef="symbol">
-            <mat-header-cell *matHeaderCellDef> symbol </mat-header-cell>
+            <mat-header-cell *matHeaderCellDef> Symbol </mat-header-cell>
             <mat-cell *matCellDef="let element"> {{element.symbol}} </mat-cell>
         </ng-container>
         <ng-container matColumnDef="hashing_algorithm">
-            <mat-header-cell *matHeaderCellDef> hashing_algorithm </mat-header-cell>
+            <mat-header-cell *matHeaderCellDef> Hashing Algorithm </mat-header-cell>
             <mat-cell *matCellDef="let element"> {{element.hashing_algorithm}} </mat-cell>
         </ng-container>
         <ng-container matColumnDef="market_cap">
@@ -17,15 +17,15 @@
             <mat-cell *matCellDef="let element"> {{element.market_data.market_cap.eur}} </mat-cell>
         </ng-container>
         <ng-container matColumnDef="description">
-            <mat-header-cell *matHeaderCellDef> description </mat-header-cell>
+            <mat-header-cell *matHeaderCellDef> Description </mat-header-cell>
             <mat-cell *matCellDef="let element"> {{element.description.en}} </mat-cell>
         </ng-container>
         <ng-container matColumnDef="links">
-            <mat-header-cell *matHeaderCellDef> links </mat-header-cell>
+            <mat-header-cell *matHeaderCellDef> Links </mat-header-cell>
             <mat-cell *matCellDef="let element"> {{element.links.homepage}} </mat-cell>
         </ng-container>
         <ng-container matColumnDef="genesis_date">
-            <mat-header-cell *matHeaderCellDef> genesis_date </mat-header-cell>
+            <mat-header-cell *matHeaderCellDef> Genesis Date </mat-header-cell>
             <mat-cell *matCellDef="let element"> {{element.genesis_date}} </mat-cell>
         </ng-container>
         <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
