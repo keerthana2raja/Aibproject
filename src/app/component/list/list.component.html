@@ -1,0 +1,37 @@
+
+<div class="mat-elevation-z8">
+    <mat-table [dataSource]="dataSource">
+        <ng-container matColumnDef="image">
+            <mat-header-cell *matHeaderCellDef> Image. </mat-header-cell>
+            <mat-cell *matCellDef="let element"><img [src]="element.image" height="40" width="40" /></mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="name">
+            <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.name}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="symbol">
+            <mat-header-cell *matHeaderCellDef> Symbol </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.symbol}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="current_price">
+            <mat-header-cell *matHeaderCellDef> Current Price </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.current_price}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="high_24h">
+            <mat-header-cell *matHeaderCellDef> High 24h </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.high_24h}} </mat-cell>>
+        </ng-container>
+        <ng-container matColumnDef="low_24h">
+            <mat-header-cell *matHeaderCellDef> Low 24h </mat-header-cell>>
+            <mat-cell *matCellDef="let element"> {{element.low_24h}} </mat-cell>>
+        </ng-container>
+        <ng-container matColumnDef="getdetails">
+            <mat-header-cell *matHeaderCellDef> Details </mat-header-cell>
+            <mat-cell *matCellDef="let element"> <button mat-raised-button color="primary" (click)="redirect(element.id)" >Get Details</button> </mat-cell>
+        </ng-container>  
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+         <mat-row  *matRowDef="let row; columns: displayedColumns;">
+        </mat-row>
+    </mat-table>
+    <mat-paginator [pageSizeOptions]="[6, 12, 18]" showFirstLastButtons></mat-paginator>
+</div>

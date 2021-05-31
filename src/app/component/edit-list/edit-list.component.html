@@ -1,0 +1,34 @@
+<div class="mat-elevation-z8">
+    <mat-table #table [dataSource]="dataSource">
+        <ng-container matColumnDef="name">
+            <mat-header-cell *matHeaderCellDef> Name </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.name}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="symbol">
+            <mat-header-cell *matHeaderCellDef> symbol </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.symbol}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="hashing_algorithm">
+            <mat-header-cell *matHeaderCellDef> hashing_algorithm </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.hashing_algorithm}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="market_cap">
+            <mat-header-cell *matHeaderCellDef> Market Cap </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.market_data.market_cap.eur}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="description">
+            <mat-header-cell *matHeaderCellDef> description </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.description.en}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="links">
+            <mat-header-cell *matHeaderCellDef> links </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.links.homepage}} </mat-cell>
+        </ng-container>
+        <ng-container matColumnDef="genesis_date">
+            <mat-header-cell *matHeaderCellDef> genesis_date </mat-header-cell>
+            <mat-cell *matCellDef="let element"> {{element.genesis_date}} </mat-cell>
+        </ng-container>
+        <mat-header-row *matHeaderRowDef="displayedColumns"></mat-header-row>
+        <mat-row *matRowDef="let row; columns: displayedColumns;"></mat-row>        
+    </mat-table>
+</div>
