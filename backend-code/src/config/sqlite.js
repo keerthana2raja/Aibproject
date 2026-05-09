@@ -11,7 +11,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const SQLITE_PATH_ENV = process.env.SQLITE_PATH || path.join(process.cwd(), "data", "aimplify.sqlite");
+const SQLITE_PATH_ENV =
+  process.env.SQLITE_PATH ||
+  (process.env.VERCEL
+    ? "/tmp/aimplify.sqlite"
+    : path.join(process.cwd(), "data", "aimplify.sqlite"));
 const { applyCanonicalDemoUpserts } = require("../data/sqliteSeedDemo");
 
 let dbSingleton = null;
@@ -112,7 +116,7 @@ function backfillAssetMasterIds(database) {
 }
 
 function getDb() {
-  if (!dbSingleton) throw new Error("SQLite not initialized — call initSqlite() first.");
+  if (!dbSingleton) initSqlite(); // auto-init on Vercel cold starts
   return dbSingleton;
 }
 
