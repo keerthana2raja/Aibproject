@@ -1,0 +1,214 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "AIMPLIFY API",
+    "version": "1.0.0",
+    "description": "AIMPLIFY Backend API – Firebase Cloud Functions + MongoDB"
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000/v1",
+      "description": "Local development server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  },
+  "security": [
+    { "bearerAuth": [] }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": ["Health"],
+        "summary": "Health check",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "API is running",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "message": "AIMPLIFY API is running 🚀" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login and get JWT token",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "example": "user@example.com" },
+                  "password": { "type": "string", "example": "secret123" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/families": {
+      "get": {
+        "tags": ["Families"],
+        "summary": "Get all families",
+        "responses": {
+          "200": { "description": "List of families" }
+        }
+      }
+    },
+    "/families/{key}": {
+      "get": {
+        "tags": ["Families"],
+        "summary": "Get family by key",
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Family details" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/assets": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get all assets",
+        "responses": {
+          "200": { "description": "List of assets" }
+        }
+      }
+    },
+    "/assets/stats": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get asset statistics",
+        "responses": {
+          "200": { "description": "Asset stats" }
+        }
+      }
+    },
+    "/assets/{id}": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get asset by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Asset details" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/assets/family/{key}": {
+      "get": {
+        "tags": ["Assets"],
+        "summary": "Get assets by family key",
+        "parameters": [
+          { "name": "key", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Assets for the family" }
+        }
+      }
+    },
+    "/getAssetDetails": {
+      "get": {
+        "tags": ["Registration"],
+        "summary": "Get all asset registrations",
+        "responses": {
+          "200": { "description": "List of asset details" }
+        }
+      }
+    },
+    "/getAssetDetails/{id}": {
+      "get": {
+        "tags": ["Registration"],
+        "summary": "Get asset registration by ID",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": { "description": "Asset registration details" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/registerAsset": {
+      "post": {
+        "tags": ["Registration"],
+        "summary": "Register a new asset",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Asset registered" }
+        }
+      }
+    },
+    "/updateAssetRegistry/{id}": {
+      "patch": {
+        "tags": ["Registration"],
+        "summary": "Update asset registration",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Updated successfully" },
+          "404": { "description": "Not found" }
+        }
+      }
+    },
+    "/activity": {
+      "get": {
+        "tags": ["Activity"],
+        "summary": "Get activity log",
+        "responses": {
+          "200": { "description": "Activity list" }
+        }
+      }
+    },
+    "/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Get all users",
+        "responses": {
+          "200": { "description": "User list" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,55 @@
+const asyncHandler = require("express-async-handler");
+const {
+  getAssets,
+  getAssetStats,
+  getAssetById,
+  getAssetsByFamily,
+  createCatalogAsset,
+  attachDemoVideoToAsset,
+} = require("../services/assetService");
+
+// GET /assets
+const listAssets = asyncHandler(async (req, res) => {
+  const assets = await getAssets(req.query);
+  res.status(200).json({ success: true, count: assets.length, data: assets });
+});
+
+// GET /assets/stats
+const assetStats = asyncHandler(async (req, res) => {
+  const stats = await getAssetStats();
+  res.status(200).json({ success: true, data: stats });
+});
+
+// GET /assets/:id
+const getAsset = asyncHandler(async (req, res) => {
+  const asset = await getAssetById(req.params.id);
+  res.status(200).json({ success: true, data: asset });
+});
+
+// GET /assets/family/:key
+const assetsByFamily = asyncHandler(async (req, res) => {
+  const assets = await getAssetsByFamily(req.params.key);
+  res.status(200).json({ success: true, count: assets.length, data: assets });
+});
+
+// POST /assets
+const createAsset = asyncHandler(async (req, res) => {
+  const asset = await createCatalogAsset(req.body || {}, req.user || {});
+  res.status(201).json({ success: true, data: asset });
+});
+
+// POST /assets/:id/demo-video (multipart field name: demo)
+const uploadAssetDemoVideo = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({
+      success: false,
+      message: 'Attach a video file using the form field name "demo" (MP4, WebM, or MOV).',
+    });
+    return;
+  }
+  const relativePath = `demos/${req.file.filename}`;
+  const asset = await attachDemoVideoToAsset(req.params.id, relativePath);
+  res.status(200).json({ success: true, data: asset });
+});
+
+module.exports = { listAssets, assetStats, getAsset, assetsByFamily, createAsset, uploadAssetDemoVideo };
