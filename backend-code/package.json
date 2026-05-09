@@ -8,7 +8,7 @@
   },
   "scripts": {
     "predev": "node scripts/ensureBetterSqlite.js",
-    "prestart": "node scripts/ensureBetterSqlite.js",
+    "prestart": "node -e \"if(!process.env.VERCEL) require('child_process').execSync('node scripts/ensureBetterSqlite.js', {stdio:'inherit'})\"",
     "start": "node src/index.js",
     "dev": "nodemon src/index.js",
     "rebuild-sqlite": "npm rebuild better-sqlite3",
