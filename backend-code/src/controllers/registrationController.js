@@ -10,6 +10,8 @@ const {
   appendSubmissionAttachmentsBatch,
 } = require("../services/registrationService");
 const { uploadToBlob } = require("../utils/blobUpload");
+const sqlite = require("../services/sqliteService");
+const { isSqliteMode } = require("../config/sqlite");
 
 // GET /submissions
 const listRegistrations = asyncHandler(async (req, res) => {
@@ -101,6 +103,26 @@ const uploadSubmissionAttachments = asyncHandler(async (req, res) => {
   );
 
   const reg = await appendSubmissionAttachmentsBatch(req.params.id, metas);
+
+  // Also sync attachments to the asset table
+  if (isSqliteMode() && reg.promotedAssetId) {
+    try {
+      const db = require("../config/sqlite").getDb();
+      const existing = await db.execute({
+        sql: "SELECT attachments FROM assets WHERE id=?",
+        args: [reg.promotedAssetId],
+      });
+      const prev = JSON.parse(existing.rows[0]?.attachments || "[]");
+      const merged = [...prev, ...metas];
+      await db.execute({
+        sql: "UPDATE assets SET attachments=? WHERE id=?",
+        args: [JSON.stringify(merged), reg.promotedAssetId],
+      });
+    } catch (e) {
+      console.error("[files] asset attachments sync failed:", e.message);
+    }
+  }
+
   res.status(200).json({ success: true, data: reg });
 });
 
