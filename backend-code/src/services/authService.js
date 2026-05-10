@@ -20,7 +20,7 @@ const loginUser = async (email, password) => {
 
   let userPayload;
   if (isSqliteMode()) {
-    const row = sqlite.userByEmailSqlite(email.trim());
+    const row = await sqlite.userByEmailSqlite(email.trim());
     userPayload = {
       id: email.toLowerCase(),
       email: email.toLowerCase(),
@@ -62,7 +62,7 @@ const loginUser = async (email, password) => {
 const logActivity = async ({ userId = null, actorName, email = "", action, resourceType = "other", description = null }) => {
   try {
     if (isSqliteMode()) {
-      sqlite.activityLogSqlite({
+      await sqlite.activityLogSqlite({
         userId,
         actorName,
         email,

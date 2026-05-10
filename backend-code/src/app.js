@@ -1,5 +1,4 @@
 require("dotenv").config();
-const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
@@ -51,8 +50,7 @@ app.use("/v1/users", userRoutes);
 app.use("/v1/catalog", catalogRoutes);
 app.use("/v1/help", helpRoutes);
 
-const uploadsStaticRoot = path.join(process.cwd(), "data", "uploads");
-app.use("/v1/uploads", express.static(uploadsStaticRoot, { maxAge: "1d", fallthrough: true }));
+// NOTE: /v1/uploads static serving removed — files now live in Vercel Blob (public URLs stored in DB).
 
 // Legacy registration routes (kept for backward compatibility)
 app.use("/v1", registrationRoutes);
