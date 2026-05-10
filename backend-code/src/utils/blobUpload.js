@@ -15,7 +15,8 @@ const { put, del } = require("@vercel/blob");
 async function uploadToBlob(pathname, buffer, contentType) {
   console.log(`[blob] uploading: ${pathname} (${buffer.length} bytes, ${contentType})`);
   const { url } = await put(pathname, buffer, {
-    access: "private",
+    access: "public",
+    token: process.env.BLOB_PUBLIC_READ_WRITE_TOKEN,
     contentType: contentType || "application/octet-stream",
   });
   console.log(`[blob] uploaded OK: ${url}`);
