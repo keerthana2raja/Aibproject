@@ -20,14 +20,27 @@ const { isSqliteMode } = require("./config/sqlite");
 
 const app = express();
 
-app.use(cors({ origin: "*" }));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://aimplify-1jeq0m2z2-keerthana-raj-s-projects.vercel.app",
+      /\.vercel\.app$/,
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  customSiteTitle: "AIMPLIFY API Docs",
-  swaggerOptions: { persistAuthorization: true },
-}));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    customSiteTitle: "AIMPLIFY API Docs",
+    swaggerOptions: { persistAuthorization: true },
+  }),
+);
 
 app.get("/", (req, res) => res.redirect("/api-docs"));
 app.get("/v1/health", (req, res) =>
