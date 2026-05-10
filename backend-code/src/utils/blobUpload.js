@@ -13,10 +13,12 @@ const { put, del } = require("@vercel/blob");
  * @returns {Promise<string>} public blob URL
  */
 async function uploadToBlob(pathname, buffer, contentType) {
+  console.log(`[blob] uploading: ${pathname} (${buffer.length} bytes, ${contentType})`);
   const { url } = await put(pathname, buffer, {
     access: "public",
     contentType: contentType || "application/octet-stream",
   });
+  console.log(`[blob] uploaded OK: ${url}`);
   return url;
 }
 

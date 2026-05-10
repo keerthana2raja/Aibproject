@@ -79,18 +79,24 @@ const uploadSubmissionAttachments = asyncHandler(async (req, res) => {
   }
 
   const regId = String(req.params.id).toUpperCase().replace(/[^\w-]/g, "").slice(0, 24) || "SUB";
+  console.log(`[files] ${req.files.length} file(s) received for ${regId}`);
 
   const metas = await Promise.all(
     req.files.map(async (f) => {
       const base     = path.basename(f.originalname || "file").replace(/[^\w.\-]+/g, "_");
       const pathname = `submissions/${regId}-doc-${Date.now()}-${base}`;
-      const blobUrl  = await uploadToBlob(pathname, f.buffer, f.mimetype || "application/octet-stream");
-      return {
-        name: f.originalname || base,
-        relpath: blobUrl,   // full https://... Vercel Blob URL
-        bytes: f.size,
-        mimetype: f.mimetype,
-      };
+      try {
+        const blobUrl = await uploadToBlob(pathname, f.buffer, f.mimetype || "application/octet-stream");
+        return {
+          name: f.originalname || base,
+          relpath: blobUrl,
+          bytes: f.size,
+          mimetype: f.mimetype,
+        };
+      } catch (err) {
+        console.error(`[files] UPLOAD FAILED for ${f.originalname}:`, err.message, err.stack);
+        throw err;
+      }
     })
   );
 
