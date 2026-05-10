@@ -427,7 +427,7 @@ exports.registrationCreateSqlite = async ({
                 effort, effort_master_id, demoReady, solution, owner, ownerInitials,
                 architecture, quickStart, prerequisites, tags,
                 stats_deploys, stats_stars, submission_status, submission_id
-              ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+              ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         args: [
           assetId, name, description || "", fk, JSON.stringify(cloudValid),
           maturityCode, mid || null, "medium", eid || null,
