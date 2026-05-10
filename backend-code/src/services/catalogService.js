@@ -2,9 +2,9 @@ const { isSqliteMode } = require("../config/sqlite");
 const sqlite = require("./sqliteService");
 const { getCatalogMasterPayload } = require("../data/catalogMasterSeed");
 
-exports.getCatalogMasters = () => {
+exports.getCatalogMasters = async () => {
   if (isSqliteMode()) {
-    const { types, values } = sqlite.catalogMastersSqlite();
+    const { types, values } = await sqlite.catalogMastersSqlite();
     return {
       types: types.map((t) => ({
         id: t.id,
