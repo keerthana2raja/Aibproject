@@ -204,7 +204,7 @@ const FamilyDetail = () => {
                 key={i}
                 className="rounded-xl border border-border bg-surface shadow-card px-4 py-3 border-l-[3px] border-l-brand-400/70"
               >
-                <div className="text-[13px] font-semibold text-text-primary leading-snug">{sol}</div>
+                <div className="text-[13px] font-semibold text-text-primary leading-snug">{typeof sol === 'string' ? sol : sol?.name || sol?.title || sol?.label || JSON.stringify(sol)}</div>
               </div>
             ))}
           </div>
