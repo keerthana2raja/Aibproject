@@ -282,7 +282,7 @@ const Detail = () => {
                     key={i}
                     className="text-[11px] text-text-secondary flex gap-2 leading-relaxed border-l-2 border-border pl-2"
                   >
-                    {entry}
+                    {typeof entry === 'string' ? entry : entry?.text || entry?.message || entry?.description || JSON.stringify(entry)}
                   </li>
                 ))}
               </ul>
