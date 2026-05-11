@@ -21,14 +21,18 @@ module.exports = async (req, res) => {
 
 // Local dev server
 if (require.main === module) {
-  getApp().then((app) => {
-    app.listen(PORT, () => {
-      console.log(`🚀 AIMPLIFY API running at http://localhost:${PORT}/v1`);
-      console.log(`📋 Health: http://localhost:${PORT}/v1/health`);
-      console.log(`   DB: ${require("./config/sqlite").isSqliteMode() ? "SQLite" : "MongoDB"}`);
+  getApp()
+    .then((app) => {
+      app.listen(PORT, () => {
+        console.log(`🚀 AIMPLIFY API running at http://localhost:${PORT}/v1`);
+        console.log(`📋 Health: http://localhost:${PORT}/v1/health`);
+        console.log(
+          `   DB: ${require("./config/sqlite").isSqliteMode() ? "SQLite" : "MongoDB"}`,
+        );
+      });
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exit(1);
     });
-  }).catch((err) => {
-    console.error(err);
-    process.exit(1);
-  });
 }
