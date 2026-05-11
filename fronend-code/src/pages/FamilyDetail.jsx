@@ -225,15 +225,15 @@ const FamilyDetail = () => {
                 </span>
               </h2>
               <p className="text-[13px] text-text-muted mt-1 ml-11">
-                Same catalogue cards as the main browse view — open an asset or preview its demo video.
+                Same catalog cards as the main browse view — open an asset or preview its demo video.
               </p>
             </div>
             <button
               type="button"
-              onClick={() => navigate('/catalogue')}
+              onClick={() => navigate('/catalog')}
               className="btn-ghost shadow-sm self-start sm:self-auto text-[13px]"
             >
-              Full catalogue
+              Full catalog
               <ArrowRight className="w-3.5 h-3.5" strokeWidth={1.75} />
             </button>
           </div>

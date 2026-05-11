@@ -14,8 +14,8 @@ import { searchSuggestions } from '../api/search';
 import Spinner from './ui/Spinner';
 
 const PAGE_META = {
-  '/dashboard': { title: 'Dashboard', sub: 'AIMPLIFY · Enterprise accelerator catalogue' },
-  '/catalogue': { title: 'Asset Catalogue', sub: 'AIMPLIFY · Enterprise accelerator catalogue' },
+  '/dashboard': { title: 'Dashboard', sub: 'AIMPLIFY · Enterprise accelerator catalog' },
+  '/catalog': { title: 'Asset Catalog', sub: 'AIMPLIFY · Enterprise accelerator catalog' },
   '/submit': { title: 'Submit Asset', sub: 'Register a new accelerator for review' },
   '/pipeline': { title: 'Approval Pipeline', sub: 'Submission status and governance' },
   '/analytics': { title: 'Analytics', sub: 'Usage and deployment metrics' },
@@ -25,7 +25,7 @@ const PAGE_META = {
 
 function resolveMeta(pathname) {
   if (pathname.startsWith('/detail/')) {
-    return { title: 'Asset Detail', sub: 'AIMPLIFY · Enterprise accelerator catalogue' };
+    return { title: 'Asset Detail', sub: 'AIMPLIFY · Enterprise accelerator catalog' };
   }
   if (pathname.startsWith('/family/')) {
     return { title: 'Platform Family', sub: 'Scope, dependencies, and assets' };
@@ -33,11 +33,11 @@ function resolveMeta(pathname) {
   if (/^\/pipeline\/[^/]+$/.test(pathname)) {
     return { title: 'Submission Review', sub: 'AI findings and governance' };
   }
-  if (pathname.startsWith('/catalogue/new')) {
-    return { title: 'Add to Catalogue', sub: 'Register a new asset' };
+  if (pathname.startsWith('/catalog/new')) {
+    return { title: 'Add to Catalog', sub: 'Register a new asset' };
   }
   const key = Object.keys(PAGE_META).find((k) => pathname.startsWith(k));
-  return key ? PAGE_META[key] : { title: 'AIMPLIFY', sub: 'Enterprise accelerator catalogue' };
+  return key ? PAGE_META[key] : { title: 'AIMPLIFY', sub: 'Enterprise accelerator catalog' };
 }
 
 const Topbar = ({ onMenuClick }) => {
@@ -245,8 +245,8 @@ const Topbar = ({ onMenuClick }) => {
           <button
             type="button"
             className="md:hidden p-2 rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-muted shadow-sm"
-            onClick={() => navigate('/catalogue')}
-            aria-label="Search catalogue"
+            onClick={() => navigate('/catalog')}
+            aria-label="Search catalog"
           >
             <Search className="w-4 h-4" />
           </button>

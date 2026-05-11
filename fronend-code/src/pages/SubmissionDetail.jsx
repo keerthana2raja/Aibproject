@@ -159,7 +159,7 @@ const SubmissionDetail = () => {
 
           {submission.promotedAssetId ? (
             <section className="rounded-xl border border-border bg-brand-50/50 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
-              <span className="text-[11px] font-semibold text-brand-900">Listed in catalogue</span>
+              <span className="text-[11px] font-semibold text-brand-900">Listed in catalog</span>
               <button
                 type="button"
                 onClick={() => navigate(`/detail/${submission.promotedAssetId}`)}

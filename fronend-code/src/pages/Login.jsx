@@ -57,7 +57,7 @@ const Login = () => {
 
         <h1 className="text-lg font-semibold text-text-primary">Sign in</h1>
         <p className="text-[13px] text-text-muted mt-1 mb-6 leading-relaxed">
-          Use your corporate identity to access the catalogue.
+          Use your corporate identity to access the catalog.
         </p>
 
         {error && (

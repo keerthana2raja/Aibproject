@@ -93,8 +93,8 @@ const Analytics = () => {
           ))
         ) : (
           [
-            { k: 'Total deploys', v: String(td.totalDeploys ?? 0), d: 'Recorded across catalogue assets' },
-            { k: 'Catalogue assets', v: String(td.totalAssets ?? 0), d: 'Registered accelerators' },
+            { k: 'Total deploys', v: String(td.totalDeploys ?? 0), d: 'Recorded across catalog assets' },
+            { k: 'Catalog assets', v: String(td.totalAssets ?? 0), d: 'Registered accelerators' },
             { k: 'Submissions', v: String(td.registeredCount ?? 0), d: 'All-time pipeline records' },
             {
               k: 'Battle-tested share',

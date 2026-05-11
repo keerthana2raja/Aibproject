@@ -127,7 +127,7 @@ const Catalogue = () => {
         if (!cancel) {
           setTaxonomy({
             loaded: true,
-            error: e.response?.data?.message || 'Failed to load catalogue reference data.',
+            error: e.response?.data?.message || 'Failed to load catalog reference data.',
             families: [],
             maturities: [],
             clouds: [],
@@ -193,7 +193,7 @@ const Catalogue = () => {
 
   const totalCount = assets.length;
 
-  if (!taxonomy.loaded) return <PageLoader message="Loading catalogue…" />;
+  if (!taxonomy.loaded) return <PageLoader message="Loading catalog…" />;
   if (taxonomy.error) {
     return (
       <div className="p-6 flex flex-1 items-center justify-center">
@@ -210,7 +210,7 @@ const Catalogue = () => {
             <span className="icon-wrap !w-9 !h-9 !rounded-xl border-brand-100 bg-brand-50 text-brand-600">
               <FolderSearch className="w-[18px] h-[18px]" strokeWidth={1.75} />
             </span>
-            Asset catalogue
+            Asset catalog
           </h2>
           <p className="text-[13px] text-text-muted mt-1 ml-11">
             Browse approved accelerators, agents, and platform patterns.
@@ -219,10 +219,10 @@ const Catalogue = () => {
         <div className="flex flex-wrap items-center gap-2 self-start">
           {canEdit && (
             <Link
-              to="/catalogue/new"
+              to="/catalog/new"
               className="btn-ghost shadow-sm"
             >
-              Add to catalogue
+              Add to catalog
             </Link>
           )}
           <button type="button" className="btn-primary shadow-md" onClick={() => navigate('/submit')}>
@@ -240,7 +240,7 @@ const Catalogue = () => {
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search title, ID, description…"
             className="flex-1 text-[13px] bg-transparent outline-none text-text-primary placeholder:text-text-muted/75"
-            aria-label="Search catalogue"
+            aria-label="Search catalog"
           />
           {query && (
             <button

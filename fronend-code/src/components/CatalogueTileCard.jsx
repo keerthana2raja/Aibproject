@@ -112,7 +112,7 @@ export const CatalogueTile = ({
 
   const hasDemoVideo = !!asset.demoVideoUrl;
   const showDemoBadge = hasDemoVideo || (asset.stats?.demos ?? 0) > 0;
-  const dept = asset.owner || 'Platform catalogue';
+  const dept = asset.owner || 'Platform catalog';
 
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' || e.key === ' ') {

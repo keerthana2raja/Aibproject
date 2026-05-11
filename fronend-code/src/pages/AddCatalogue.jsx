@@ -58,7 +58,7 @@ const AddCatalogue = () => {
           owner: prev.owner || user?.name || '',
         }));
       } catch (e) {
-        if (!c) setBootstrap({ ok: false, error: e.response?.data?.message || 'Failed to load catalogue data.' });
+        if (!c) setBootstrap({ ok: false, error: e.response?.data?.message || 'Failed to load catalog data.' });
         return;
       }
       if (!c) setBootstrap({ ok: true, error: null });
@@ -106,19 +106,19 @@ const AddCatalogue = () => {
       if (newId && demoVideoFile) {
         try {
           await uploadAssetDemoVideo(newId, demoVideoFile);
-          toast.success('Catalogue entry saved. Demo video attached.');
+          toast.success('Catalog entry saved. Demo video attached.');
         } catch (upErr) {
           toast.error(
             upErr.response?.data?.message ||
               'Asset saved, but demo upload failed. Try uploading again via API or contact an admin.',
           );
-          toast.success('Catalogue entry saved.');
+          toast.success('Catalog entry saved.');
         }
       } else {
-        toast.success('Catalogue entry saved.');
+        toast.success('Catalog entry saved.');
       }
       if (newId) navigate(`/detail/${newId}`, { replace: true });
-      else navigate('/catalogue', { replace: true });
+      else navigate('/catalog', { replace: true });
     } catch (err) {
       const msg = err.response?.data?.message || 'Unable to save. Editors or admins only.';
       toast.error(msg);
@@ -134,7 +134,7 @@ const AddCatalogue = () => {
       </div>
     );
 
-  if (!bootstrap.ok) return <PageLoader message="Loading catalogue reference data…" />;
+  if (!bootstrap.ok) return <PageLoader message="Loading catalog reference data…" />;
 
   const role = (user?.role || '').toLowerCase();
   if (role !== 'admin' && role !== 'editor') {
@@ -143,10 +143,10 @@ const AddCatalogue = () => {
         <div className="border border-border bg-surface rounded-enterprise-md p-6 shadow-enterprise">
           <h1 className="text-[15px] font-semibold text-text-primary">Restricted</h1>
           <p className="text-[12px] text-text-muted mt-2 leading-relaxed">
-            Only catalogue editors can create registry assets. Contact your AIMPLIFY admin if you need access.
+            Only catalog editors can create registry assets. Contact your AIMPLIFY admin if you need access.
           </p>
-          <Link to="/catalogue" className="inline-flex mt-4 text-[12px] font-semibold text-brand hover:underline">
-            ← Back to catalogue
+          <Link to="/catalog" className="inline-flex mt-4 text-[12px] font-semibold text-brand hover:underline">
+            ← Back to catalog
           </Link>
         </div>
       </div>
@@ -165,7 +165,7 @@ const AddCatalogue = () => {
           <ArrowLeft className="w-4 h-4" strokeWidth={1.5} />
         </button>
         <Layers className="w-4 h-4 text-brand" strokeWidth={1.75} aria-hidden />
-        <h1 className="text-[15px] font-semibold text-text-primary">New catalogue accelerator</h1>
+        <h1 className="text-[15px] font-semibold text-text-primary">New catalog accelerator</h1>
       </div>
       <p className="text-[11px] text-text-muted -mt-1">
         Saved to the registry database. Families and taxonomy are loaded from the server.
@@ -279,7 +279,7 @@ const AddCatalogue = () => {
             }}
           />
           <p className="text-[10px] text-text-muted mt-1 leading-relaxed">
-            MP4, WebM, or MOV — up to ~120MB. Stored on the server and playable from the catalogue.
+            MP4, WebM, or MOV — up to ~120MB. Stored on the server and playable from the catalog.
           </p>
         </div>
         <div>
@@ -303,7 +303,7 @@ const AddCatalogue = () => {
           <button
             type="button"
             className="btn-primary border bg-transparent border-border text-text-secondary !shadow-none hover:bg-surface-2"
-            onClick={() => navigate('/catalogue')}
+            onClick={() => navigate('/catalog')}
           >
             Cancel
           </button>
