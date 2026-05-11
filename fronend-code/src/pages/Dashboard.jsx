@@ -422,7 +422,7 @@ const Dashboard = () => {
                 <>
                   {(stats?.notices || []).map((n) => (
                     <NoticeRow key={n.headline}>
-                      <span className="font-semibold text-text-primary">{n.headline}:</span> {n.detail}
+                      <span className="font-semibold text-text-primary">{typeof n.headline === 'string' ? n.headline : String(n.headline ?? '')}:</span> {typeof n.detail === 'string' ? n.detail : String(n.detail ?? '')}
                     </NoticeRow>
                   ))}
                   {stats?.pendingSubmissions > 0 ? (
@@ -479,9 +479,9 @@ const Dashboard = () => {
                 {activity.map((a, i) => (
                   <li key={i} className="px-4 py-3 hover:bg-surface-muted/40 transition-colors">
                     <div className="text-[13px] font-semibold text-text-primary leading-snug">
-                      <span>{a.name}</span> <span className="text-text-muted font-normal">{a.action}</span>
+                      <span>{typeof a.name === 'string' ? a.name : String(a.name ?? '')}</span> <span className="text-text-muted font-normal">{typeof a.action === 'string' ? a.action : String(a.action ?? '')}</span>
                     </div>
-                    {a.description && (
+                    {a.description && typeof a.description === 'string' && (
                       <div className="text-[12px] text-text-muted truncate mt-0.5">{a.description}</div>
                     )}
                     <div className="text-[11px] text-text-muted mt-1 tabular-nums">

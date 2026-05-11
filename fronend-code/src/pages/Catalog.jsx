@@ -413,9 +413,9 @@ const Catalog = () => {
             const familyThemeName = resolveFamilyThemeName(a.family, famLabel);
             const matLc = String(a.maturity || '').toLowerCase();
             const maturityLabel = maturityByCode[matLc] || a.maturity || '';
-            const cloudLabels = (a.clouds || []).map(
-              (c) => cloudByCode[String(c).toLowerCase()] || cloudByCode[c] || c,
-            );
+            const cloudLabels = (a.clouds || [])
+              .map((c) => cloudByCode[String(c || '').toLowerCase()] || cloudByCode[c] || (typeof c === 'string' ? c : ''))
+              .filter(Boolean);
             const complexityTier = effortToTier(a.effort);
             return (
               <li key={a.id || a._id} className="min-w-0">
@@ -439,9 +439,9 @@ const Catalog = () => {
             const famLabel = familyByKey[a.family] || a.family;
             const matLc = String(a.maturity || '').toLowerCase();
             const maturityLabel = maturityByCode[matLc] || a.maturity || '';
-            const cloudLabels = (a.clouds || []).map(
-              (c) => cloudByCode[String(c).toLowerCase()] || cloudByCode[c] || c,
-            );
+            const cloudLabels = (a.clouds || [])
+              .map((c) => cloudByCode[String(c || '').toLowerCase()] || cloudByCode[c] || (typeof c === 'string' ? c : ''))
+              .filter(Boolean);
             return (
               <CatalogListRow
                 key={a.id || a._id}

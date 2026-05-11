@@ -123,7 +123,7 @@ const FamilyDetail = () => {
             <h1 className="text-lg font-semibold text-text-primary leading-tight tracking-tight">
               {family.name}
             </h1>
-            {family.longDesc && (
+            {family.longDesc && typeof family.longDesc === 'string' && (
               <p className="text-[13px] text-text-secondary leading-relaxed mt-3">{family.longDesc}</p>
             )}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
@@ -153,7 +153,7 @@ const FamilyDetail = () => {
                   {family.useCases.map((u, i) => (
                     <li key={i} className="text-[12px] text-text-secondary leading-snug flex gap-2">
                       <span className="text-brand-600/80 flex-shrink-0 font-bold">·</span>
-                      {u}
+                      {typeof u === 'string' ? u : u?.name || u?.label || String(u ?? '')}
                     </li>
                   ))}
                 </ul>
@@ -168,7 +168,7 @@ const FamilyDetail = () => {
                   <ul className="space-y-1.5 text-[12px] text-text-secondary">
                     {family.dependsOn.map((d, i) => (
                       <li key={i} className="border-l-2 border-border pl-2.5 leading-snug">
-                        {d}
+                        {typeof d === 'string' ? d : d?.name || d?.label || String(d ?? '')}
                       </li>
                     ))}
                   </ul>
@@ -182,7 +182,7 @@ const FamilyDetail = () => {
                   <ul className="space-y-1.5 text-[12px] text-text-secondary">
                     {family.enables.map((e, i) => (
                       <li key={i} className="border-l-2 border-border pl-2.5 leading-snug">
-                        {e}
+                        {typeof e === 'string' ? e : e?.name || e?.label || String(e ?? '')}
                       </li>
                     ))}
                   </ul>
@@ -241,9 +241,9 @@ const FamilyDetail = () => {
             {assets.map((a) => {
               const matLc = String(a.maturity || '').toLowerCase();
               const maturityLabel = maturityByCode[matLc] || a.maturity || '';
-              const cloudLabels = (a.clouds || []).map(
-                (c) => cloudByCode[String(c).toLowerCase()] || cloudByCode[c] || c,
-              );
+              const cloudLabels = (a.clouds || [])
+                .map((c) => cloudByCode[String(c || '').toLowerCase()] || cloudByCode[c] || (typeof c === 'string' ? c : ''))
+                .filter(Boolean);
               const complexityTier = effortToTier(a.effort);
               return (
                 <li key={a.id} className="min-w-0">
