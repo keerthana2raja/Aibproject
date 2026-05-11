@@ -163,7 +163,7 @@ const Detail = () => {
                   <span className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary capitalize">
                     {familyDisplay}
                   </span>
-                  {asset.owner && (
+                  {asset.owner && typeof asset.owner === 'string' && (
                     <span className="text-[11px] text-text-muted">
                       Owner: <span className="text-text-secondary">{asset.owner}</span>
                     </span>
@@ -199,7 +199,7 @@ const Detail = () => {
             </div>
           </div>
 
-          {asset.desc && (
+          {asset.desc && typeof asset.desc === 'string' && (
             <p className="text-[12px] text-text-secondary leading-relaxed mt-4 max-w-3xl border-t border-border pt-4">
               {asset.desc}
             </p>
@@ -215,19 +215,20 @@ const Detail = () => {
                 Cloud
               </span>
               <div className="flex gap-1 flex-wrap">
-                {(asset.clouds || []).map((c) => (
-                    <span
-                      key={c}
-                      className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary"
-                    >
-                      {mastersByCode.cloud[String(c).toLowerCase()] ||
-                        mastersByCode.cloud[c] ||
-                        c}
-                    </span>
-                  ))}
+                {(asset.clouds || [])
+                    .map((c) => mastersByCode.cloud[String(c || '').toLowerCase()] || mastersByCode.cloud[c] || (typeof c === 'string' ? c : ''))
+                    .filter(Boolean)
+                    .map((label) => (
+                      <span
+                        key={label}
+                        className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary"
+                      >
+                        {label}
+                      </span>
+                    ))}
               </div>
             </div>
-            {asset.solution && (
+            {asset.solution && typeof asset.solution === 'string' && (
               <div className="flex flex-col gap-0.5 min-w-[8rem] max-w-md">
                 <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wide">
                   Solution
@@ -259,14 +260,17 @@ const Detail = () => {
                 Tags
               </h2>
               <div className="flex gap-1 flex-wrap">
-                {asset.tags.map((t) => (
-                  <span
-                    key={t}
-                    className="text-[10px] px-1.5 py-px bg-surface-3 text-text-secondary border border-border font-medium"
-                  >
-                    {t}
-                  </span>
-                ))}
+                {asset.tags.map((t, i) => {
+                  const label = typeof t === 'string' ? t : String(t ?? '');
+                  return label ? (
+                    <span
+                      key={i}
+                      className="text-[10px] px-1.5 py-px bg-surface-3 text-text-secondary border border-border font-medium"
+                    >
+                      {label}
+                    </span>
+                  ) : null;
+                })}
               </div>
             </section>
           )}
