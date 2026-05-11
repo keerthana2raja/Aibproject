@@ -19,7 +19,6 @@ module.exports = async (req, res) => {
   return app(req, res);
 };
 
-// Local dev server
 if (require.main === module) {
   getApp()
     .then((app) => {
