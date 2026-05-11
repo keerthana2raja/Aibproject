@@ -26,6 +26,7 @@ app.use(
       "http://localhost:5173",
       "https://aimplify-1jeq0m2z2-keerthana-raj-s-projects.vercel.app",
       /\.vercel\.app$/,
+      "https://amplify.infovision.io/login",
     ],
     credentials: true,
   }),
