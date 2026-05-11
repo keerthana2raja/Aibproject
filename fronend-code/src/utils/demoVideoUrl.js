@@ -14,19 +14,12 @@ export function pickDemoVideoRelPath(record) {
   return String(v).trim();
 }
 
-/** Set to false when the API returns demo URLs; remove this block once backend is stable. */
-export const USE_TEMP_DEMO_VIDEO_FALLBACK = true;
-
-/** Short CC0 sample; public GCS “gtv-videos-bucket” URLs often return 403 from browsers. */
-export const TEMP_DEMO_VIDEO_URL =
+/** Shown only when API omits a demo URL — short CC0 clip. */
+export const FALLBACK_DEMO_VIDEO_URL =
   'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
 
-/**
- * Same as pickDemoVideoRelPath, but uses TEMP_DEMO_VIDEO_URL when the API omits a URL (local testing).
- */
-export function pickDemoVideoRelPathOrTestFallback(record) {
+export function pickDemoVideoRelPathOrFallback(record) {
   const fromApi = pickDemoVideoRelPath(record);
   if (fromApi) return fromApi;
-  if (!USE_TEMP_DEMO_VIDEO_FALLBACK) return '';
-  return TEMP_DEMO_VIDEO_URL;
+  return FALLBACK_DEMO_VIDEO_URL;
 }

@@ -15,6 +15,12 @@ import Spinner from '../components/ui/Spinner';
 import PageLoader from '../components/ui/PageLoader';
 import ErrorState from '../components/ui/ErrorState';
 
+/** Align copy with app nav: "Catalog" (API may still return British "catalogue"). */
+function helpDisplayText(text) {
+  if (text == null || typeof text !== 'string') return text;
+  return text.replace(/\bcatalogue\b/gi, 'Catalog');
+}
+
 const ICON_MAP = {
   book: BookOpen,
   video: Video,
@@ -33,7 +39,7 @@ const FaqItem = ({ question, answer }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-3 text-left focus-ring"
       >
-        <span className="text-[12px] font-semibold text-text-primary pr-2">{question}</span>
+        <span className="text-[12px] font-semibold text-text-primary pr-2">{helpDisplayText(question)}</span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-text-muted flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           strokeWidth={1.5}
@@ -41,7 +47,7 @@ const FaqItem = ({ question, answer }) => {
       </button>
       {isOpen && (
         <div className="text-[12px] text-text-secondary pb-3 leading-relaxed pr-6">
-          {answer}
+          {helpDisplayText(answer)}
         </div>
       )}
     </div>
@@ -69,8 +75,8 @@ const Tile = ({ iconKey, title, subtitle, action, onSwagger }) => {
       <div className="w-8 h-8 border border-border bg-surface-3 rounded-lg flex items-center justify-center mb-2">
         <Icon className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
       </div>
-      <div className="text-[12px] font-semibold text-text-primary">{title}</div>
-      <div className="text-[10px] text-text-muted mt-0.5">{subtitle}</div>
+      <div className="text-[12px] font-semibold text-text-primary">{helpDisplayText(title)}</div>
+      <div className="text-[10px] text-text-muted mt-0.5">{helpDisplayText(subtitle)}</div>
     </button>
   );
 };
@@ -150,8 +156,9 @@ const Help = () => {
       <div>
         <h2 className="text-[13px] font-semibold text-text-primary">Help</h2>
         <p className="text-[11px] text-text-muted mt-0.5">
-          {helpPayload?.subtitle ||
-            'Search uses the live registry API; topics below are loaded from GET /v1/help.'}
+          {helpPayload?.subtitle
+            ? helpDisplayText(helpPayload.subtitle)
+            : 'Search uses the live registry API; topics below are loaded from GET /v1/help.'}
         </p>
       </div>
 
@@ -246,7 +253,7 @@ const Help = () => {
         <div>
           <div className="text-[12px] font-semibold text-text-primary">{contact.title}</div>
           {contact.description ? (
-            <div className="text-[11px] text-text-muted mt-0.5">{contact.description}</div>
+            <div className="text-[11px] text-text-muted mt-0.5">{helpDisplayText(contact.description)}</div>
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">

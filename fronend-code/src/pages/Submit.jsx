@@ -5,6 +5,7 @@ import {
   UploadCloud,
   ArrowRight,
   Check,
+  Send,
   AlertCircle,
   FolderPlus,
   Lock,
@@ -44,6 +45,10 @@ function resolveUploadedAssetHref(raw) {
 }
 
 const inpErr = 'border-red-300/90 focus:border-red-400 focus:ring-red-500/20';
+const inpFocusPurple =
+  'focus-visible:border-violet-500/80 focus-visible:ring-2 focus-visible:ring-violet-500/20 transition-[border-color,box-shadow] duration-150';
+
+const inpClass = (err) => `inp shadow-inner outline-none ${err ? inpErr : inpFocusPurple}`;
 
 const FieldGroup = ({ label, children, span2, hint, inputId, error }) => (
   <div className={`flex flex-col gap-1.5${span2 ? ' col-span-1 sm:col-span-2' : ''}`}>
@@ -85,19 +90,90 @@ const STEPS = [
   { n: 3, title: 'Review', sub: 'Declaration & submit' },
 ];
 
-const StepDot = ({ num, current, done }) => (
-  <span
-    className={`w-[26px] h-[26px] flex items-center justify-center text-[10px] font-bold flex-shrink-0 rounded-full border transition-colors duration-200 ${
-      done
-        ? 'bg-brand-600 text-white border-brand-600 shadow-sm'
-        : current
-          ? 'bg-brand-50 border-brand-500 text-brand-800 shadow-inner'
-          : 'bg-surface-muted text-text-muted border-border'
-    }`}
-  >
-    {done ? <Check className="w-3 h-3" strokeWidth={2.5} /> : num}
-  </span>
-);
+function StepConnector({ rightStep, step }) {
+  let bar = 'bg-slate-200';
+  if (step > rightStep) bar = 'bg-emerald-500';
+  else if (step === rightStep) bar = 'bg-gradient-to-r from-emerald-500 via-emerald-500/90 to-violet-500';
+
+  return (
+    <div className="flex flex-1 min-w-[8px] min-h-[44px] items-center self-start shrink px-1" aria-hidden>
+      <div className={`h-1 w-full rounded-full transition-all duration-500 ease-out ${bar}`} />
+    </div>
+  );
+}
+
+function SubmitStepRail({ step, jumpToStep }) {
+  return (
+    <div className="flex w-full items-start justify-between gap-0.5 pt-1">
+      {STEPS.map((s, idx) => {
+        const done = step > s.n;
+        const current = step === s.n;
+        const canGoBack = s.n < step;
+
+        const node = (
+          <div className="relative mx-auto flex flex-col items-center">
+            <div
+              className={`flex h-11 w-11 items-center justify-center rounded-full border-2 text-[13px] font-bold transition-all duration-300 tabular-nums ${
+                done
+                  ? 'border-emerald-600 bg-emerald-500 text-white shadow-[0_0_0_5px_rgba(16,185,129,0.16)]'
+                  : current
+                    ? 'border-violet-500 bg-white text-violet-700 shadow-[0_0_0_6px_rgba(139,92,246,0.16)]'
+                    : 'border-slate-200 bg-slate-50 text-slate-400'
+              }`}
+            >
+              {done ? <Check className="w-5 h-5" strokeWidth={2.75} aria-hidden /> : s.n}
+            </div>
+            {done ? (
+              <span
+                className="absolute -top-0.5 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 border-white bg-emerald-600 shadow-md"
+                aria-hidden
+              >
+                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3.5} />
+              </span>
+            ) : null}
+          </div>
+        );
+
+        const labels = (
+          <>
+            <span
+              className={`mt-2 text-center text-[11px] font-semibold leading-tight tracking-tight ${
+                done ? 'text-emerald-700' : current ? 'text-violet-700' : 'text-slate-500'
+              }`}
+            >
+              {s.title}
+            </span>
+            <span className="mt-0.5 px-1 text-center text-[10px] leading-snug text-text-muted line-clamp-2">{s.sub}</span>
+          </>
+        );
+
+        return (
+          <React.Fragment key={s.n}>
+            <div className="flex min-w-[72px] max-w-[138px] flex-[1_1_0] flex-col items-stretch py-1">
+              {canGoBack ? (
+                <button
+                  type="button"
+                  onClick={() => jumpToStep(s.n)}
+                  title={`Go back to ${s.title}`}
+                  className="focus-ring flex w-full cursor-pointer flex-col items-center rounded-xl py-2 transition-colors hover:bg-surface-muted/70"
+                >
+                  {node}
+                  {labels}
+                </button>
+              ) : (
+                <div className="pointer-events-none flex w-full flex-col items-center px-1">
+                  {node}
+                  {labels}
+                </div>
+              )}
+            </div>
+            {idx < STEPS.length - 1 ? <StepConnector rightStep={idx + 2} step={step} /> : null}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
+}
 
 const errLine = (msg) => (
   <span className="text-2xs text-red-700 flex items-center gap-1" role="alert">
@@ -572,8 +648,7 @@ const Submit = () => {
     );
   }
 
-  const stepLabel = (n) =>
-    step === n ? 'text-brand-800 font-semibold' : step > n ? 'text-text-primary font-semibold' : 'text-text-muted font-medium';
+  const progressPct = Math.min(100, Math.round((step / STEPS.length) * 100));
 
   return (
     <div className="page-wrap max-w-[760px]">
@@ -590,55 +665,37 @@ const Submit = () => {
           <span className="icon-wrap !w-11 !h-11 !rounded-xl border-brand-200 bg-brand-50 text-brand-600 shrink-0 shadow-sm">
             <FolderPlus className="w-5 h-5" strokeWidth={1.75} />
           </span>
-          <div className="min-w-0 pt-0.5">
-            <h1 className="text-[17px] font-semibold text-text-primary tracking-tight leading-snug">Submit accelerator</h1>
-            <p className="text-xs text-text-muted mt-1 leading-relaxed max-w-xl">
-              Three short steps. Your entry is reviewed before it can appear in the catalog. Fields marked{' '}
+          <div className="min-w-0 pt-0.5 flex-1 max-w-xl">
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              <h1 className="text-[17px] font-semibold text-text-primary tracking-tight leading-snug">Submit accelerator</h1>
+              {step > 1 ? (
+                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-800 shadow-sm tabular-nums">
+                  <Check className="h-3 w-3 shrink-0" strokeWidth={2.75} aria-hidden />
+                  Step {step - 1} done
+                </span>
+              ) : null}
+            </div>
+            <p className="text-xs text-text-muted mt-1 leading-relaxed">
+              Three short steps — reviewed before appearing in the catalog. Fields marked{' '}
               <span className="text-text-secondary font-medium">*</span> are required.
             </p>
+            <div className="flex items-center gap-3 mt-3 max-w-xl" aria-live="polite">
+              <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden shadow-inner ring-1 ring-black/[0.04] dark:ring-white/[0.06]">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-violet-500 to-violet-600 shadow-sm transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                  style={{ width: `${progressPct}%` }}
+                />
+              </div>
+              <span className="text-[10px] font-semibold text-text-muted tabular-nums whitespace-nowrap shrink-0">
+                Step {step} of {STEPS.length} — {progressPct}% complete
+              </span>
+            </div>
           </div>
         </div>
       </header>
 
-      <nav className="card px-3 py-2.5 sm:px-4 sm:py-3 shadow-card" aria-label="Submission steps">
-        <ol className="flex items-center w-full gap-0.5 sm:gap-1">
-          {STEPS.map((s, idx) => {
-            const done = step > s.n;
-            const current = step === s.n;
-            const canGoBack = s.n < step;
-            return (
-              <li key={s.n} className="flex items-center flex-1 min-w-0">
-                <div className="flex flex-col items-center w-full min-w-0">
-                  <button
-                    type="button"
-                    onClick={() => jumpToStep(s.n)}
-                    disabled={!canGoBack}
-                    title={canGoBack ? `Go back to ${s.title}` : undefined}
-                    className={`flex flex-col items-center gap-0.5 w-full max-w-[112px] mx-auto focus-ring rounded-lg py-1 -my-1 transition-opacity ${
-                      canGoBack ? 'cursor-pointer hover:bg-surface-muted/80 opacity-100' : 'cursor-default opacity-100'
-                    } ${current ? 'ring-1 ring-brand-400/35 ring-offset-1 ring-offset-surface rounded-lg' : ''}`}
-                  >
-                    <StepDot num={s.n} current={current} done={done} />
-                    <span className={`text-[10px] sm:text-[11px] text-center leading-tight ${stepLabel(s.n)}`}>
-                      {s.title}
-                    </span>
-                    <span className="text-[10px] text-text-muted text-center leading-tight hidden sm:block line-clamp-2 px-0.5">
-                      {s.sub}
-                    </span>
-                  </button>
-                </div>
-                {idx < STEPS.length - 1 ? (
-                  <div
-                    className={`hidden sm:block self-center h-0.5 flex-1 max-w-[20px] lg:max-w-8 mx-0.5 shrink-0 rounded-full ${
-                      step > s.n ? 'bg-brand-500' : 'bg-border'
-                    }`}
-                    aria-hidden
-                  />
-                ) : null}
-              </li>
-            );
-          })}
-        </ol>
+      <nav className="card px-3 py-3 sm:px-5 sm:py-4 shadow-card" aria-label="Submission steps">
+        <SubmitStepRail step={step} jumpToStep={jumpToStep} />
       </nav>
 
       {step === 1 && (
@@ -663,7 +720,7 @@ const Submit = () => {
                   value={form.name}
                   onChange={set('name')}
                   placeholder="e.g. Invoice extraction agent"
-                  className={`inp ${errors.name ? inpErr : ''}`}
+                  className={inpClass(errors.name)}
                   autoComplete="off"
                 />
               </FieldGroup>
@@ -680,7 +737,7 @@ const Submit = () => {
                   onChange={set('description')}
                   placeholder="What it does and which business problem it solves."
                   rows={4}
-                  className={`inp resize-y min-h-[100px] leading-relaxed ${errors.description ? inpErr : ''}`}
+                  className={`${inpClass(errors.description)} resize-y min-h-[100px] leading-relaxed`}
                 />
               </FieldGroup>
 
@@ -690,7 +747,7 @@ const Submit = () => {
                   value={form.owner}
                   onChange={set('owner')}
                   placeholder="Your name"
-                  className="inp"
+                  className={inpClass()}
                   autoComplete="name"
                 />
               </FieldGroup>
@@ -701,7 +758,7 @@ const Submit = () => {
                   value={form.team}
                   onChange={set('team')}
                   placeholder="e.g. Data & AI CoE"
-                  className="inp"
+                  className={inpClass()}
                 />
               </FieldGroup>
 
@@ -711,12 +768,12 @@ const Submit = () => {
                   value={form.coContributors}
                   onChange={set('coContributors')}
                   placeholder="Names, comma-separated"
-                  className="inp"
+                  className={inpClass()}
                 />
               </FieldGroup>
 
               <FieldGroup label="Version" inputId="sub-version">
-                <input type="text" value={form.version} onChange={set('version')} placeholder="e.g. 1.0.0" className="inp" />
+                <input type="text" value={form.version} onChange={set('version')} placeholder="e.g. 1.0.0" className={inpClass()} />
               </FieldGroup>
 
               <FieldGroup label="Tags" span2 inputId="sub-tags" hint="Comma-separated keywords for search and routing.">
@@ -725,7 +782,7 @@ const Submit = () => {
                   value={form.tags}
                   onChange={set('tags')}
                   placeholder="e.g. ETL, GCP, automation"
-                  className="inp"
+                  className={inpClass()}
                 />
               </FieldGroup>
             </div>
@@ -755,7 +812,7 @@ const Submit = () => {
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
-                    className="inp text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold"
+                    className={`${inpClass()} text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold`}
                     onChange={onDemoVideoChange}
                   />
                   {uploadErrors.demo ? errLine(uploadErrors.demo) : null}
@@ -773,7 +830,7 @@ const Submit = () => {
                   <input
                     type="file"
                     multiple
-                    className="inp text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold"
+                    className={`${inpClass()} text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold`}
                     onChange={onSupportingFilesChange}
                   />
                   {uploadErrors.supporting ? errLine(uploadErrors.supporting) : null}
@@ -789,7 +846,7 @@ const Submit = () => {
                   <input
                     type="file"
                     accept="image/png,image/jpeg,image/svg+xml,image/webp,application/pdf,.png,.jpg,.jpeg,.svg,.webp,.pdf"
-                    className="inp text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold"
+                    className={`${inpClass()} text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold`}
                     onChange={onArchitectureDiagramChange}
                   />
                   {uploadErrors.architecture ? errLine(uploadErrors.architecture) : null}
@@ -815,7 +872,7 @@ const Submit = () => {
                   onChange={set('quickStart')}
                   placeholder={'# Install dependencies\ncd my-accelerator\npip install -r requirements.txt'}
                   rows={7}
-                  className="inp resize-y min-h-[120px] font-mono text-[12px] leading-relaxed"
+                  className={`${inpClass()} resize-y min-h-[120px] font-mono text-[12px] leading-relaxed`}
                   spellCheck={false}
                 />
               </div>
@@ -886,7 +943,7 @@ const Submit = () => {
               </FieldGroup>
 
               <FieldGroup label="Cloud platform" inputId="sub-cloud">
-                <select value={form.cloud} onChange={set('cloud')} className="inp cursor-pointer">
+                <select value={form.cloud} onChange={set('cloud')} className={`${inpClass()} cursor-pointer`}>
                   {cloudOpts.map((cl) => (
                     <option key={cl.code} value={cl.code}>
                       {cl.label}
@@ -896,7 +953,7 @@ const Submit = () => {
               </FieldGroup>
 
               <FieldGroup label="Maturity stage" inputId="sub-maturity">
-                <select value={form.maturity} onChange={set('maturity')} className="inp cursor-pointer">
+                <select value={form.maturity} onChange={set('maturity')} className={`${inpClass()} cursor-pointer`}>
                   {maturityOpts.map((m) => (
                     <option key={m.code} value={m.code}>
                       {m.label}
@@ -916,7 +973,7 @@ const Submit = () => {
                   value={form.gitUrl}
                   onChange={set('gitUrl')}
                   placeholder="https://github.com/org/repository"
-                  className="inp font-mono text-[13px]"
+                  className={`${inpClass()} font-mono text-[13px]`}
                 />
               </FieldGroup>
 
@@ -926,7 +983,7 @@ const Submit = () => {
                   onChange={set('architecture')}
                   placeholder="Main components, data flow, and key services."
                   rows={4}
-                  className="inp resize-y min-h-[88px] leading-relaxed"
+                  className={`${inpClass()} resize-y min-h-[88px] leading-relaxed`}
                 />
               </FieldGroup>
 
@@ -936,7 +993,7 @@ const Submit = () => {
                   onChange={set('prerequisites')}
                   placeholder="APIs, secrets, infra, or datasets required to run."
                   rows={4}
-                  className="inp resize-y min-h-[88px] leading-relaxed"
+                  className={`${inpClass()} resize-y min-h-[88px] leading-relaxed`}
                 />
               </FieldGroup>
             </div>
@@ -1120,7 +1177,7 @@ const Submit = () => {
                     </>
                   ) : (
                     <>
-                      <Check className="w-[15px] h-[15px]" /> Submit
+                      <Send className="w-[15px] h-[15px]" aria-hidden strokeWidth={2} /> Submit for review
                     </>
                   )}
                 </button>

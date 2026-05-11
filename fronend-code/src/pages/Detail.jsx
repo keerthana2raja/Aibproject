@@ -19,8 +19,9 @@ import Spinner from '../components/ui/Spinner';
 import DemoVideoModal from '../components/DemoVideoModal';
 import QuickStartPanel from '../components/QuickStartPanel';
 import AttachedDocumentsPanel from '../components/AttachedDocumentsPanel';
-import { resolveMediaSrc } from '../utils/mediaSrc';
-import { pickDemoVideoRelPathOrTestFallback } from '../utils/demoVideoUrl';
+import { resolveMediaSrc, resolveAttachmentHref } from '../utils/mediaSrc';
+import { pickDemoVideoRelPath, pickDemoVideoRelPathOrFallback } from '../utils/demoVideoUrl';
+import { enrichCatalogAssetFromSubmission } from '../utils/enrichCatalogAssetFromSubmission';
 import { useToast } from '../context/ToastContext';
 
 const MetaItem = ({ label, value }) => (
@@ -56,7 +57,8 @@ const Detail = () => {
         getCatalogMasters().catch(() => ({ data: { data: { values: [] } } })),
       ]);
       const a = assetRes.data.data;
-      setAsset(a);
+      const enriched = await enrichCatalogAssetFromSubmission(a);
+      setAsset(enriched);
 
       const vals = mastersRes.data?.data?.values || [];
       const maturity = {};
@@ -120,9 +122,10 @@ const Detail = () => {
   if (!asset) return null;
 
   const demoVideoSrc = (() => {
-    const raw = pickDemoVideoRelPathOrTestFallback(asset);
+    const raw = pickDemoVideoRelPathOrFallback(asset);
     return raw ? resolveMediaSrc(raw) : '';
   })();
+  const hasApiDemoVideo = !!pickDemoVideoRelPath(asset);
 
   const familyDisplay = familyRow?.name || asset.family;
   const maturityLabel =
@@ -181,7 +184,7 @@ const Detail = () => {
                 disabled={ctaBusy}
                 onClick={() => {
                   setDemoModalOpen(true);
-                  if (demoVideoSrc) void logCta('demo_opened');
+                  if (hasApiDemoVideo) void logCta('demo_opened');
                 }}
                 className="py-1.5 px-3 rounded-lg border border-border bg-surface text-[12px] font-semibold text-text-secondary inline-flex items-center justify-center gap-1.5 hover:bg-surface-3 focus-ring disabled:opacity-50 shadow-sm"
               >
@@ -249,9 +252,7 @@ const Detail = () => {
 
           <AttachedDocumentsPanel
             attachments={asset.attachments}
-            resolveHref={(relpath) =>
-              resolveMediaSrc(`/v1/uploads/${String(relpath || '').replace(/^\/+/, '')}`)
-            }
+            resolveHref={resolveAttachmentHref}
           />
 
           {asset.tags?.length > 0 && (

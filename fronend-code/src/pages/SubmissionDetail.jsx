@@ -20,14 +20,14 @@ import QuickStartPanel from '../components/QuickStartPanel';
 import AttachedDocumentsPanel from '../components/AttachedDocumentsPanel';
 import { useToast } from '../context/ToastContext';
 import { PIPELINE_STATUS_META } from '../theme/enterpriseMeta';
-import { resolveMediaSrc } from '../utils/mediaSrc';
-import { pickDemoVideoRelPathOrTestFallback } from '../utils/demoVideoUrl';
+import { resolveMediaSrc, resolveAttachmentHref } from '../utils/mediaSrc';
+import { pickDemoVideoRelPathOrFallback } from '../utils/demoVideoUrl';
 import { normalizeSubmissionDetail } from '../utils/submissionApiNormalize';
 
 const StatusBadge = ({ status }) => {
   const cfg = PIPELINE_STATUS_META[status] || { label: status };
   return (
-    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 border border-border bg-surface-3 text-text-secondary">
+    <span className="inline-flex items-center text-[11px] font-semibold px-2 py-0.5 border border-border bg-surface-3 text-text-secondary rounded-md">
       {cfg.label}
     </span>
   );
@@ -97,7 +97,7 @@ const SubmissionDetail = () => {
 
   const canAct = submission.status === 'governance';
   const demoSrc = (() => {
-    const raw = pickDemoVideoRelPathOrTestFallback(submission);
+    const raw = pickDemoVideoRelPathOrFallback(submission);
     return raw ? resolveMediaSrc(raw) : '';
   })();
   const attachments = submission.submissionAttachments || [];
@@ -120,12 +120,12 @@ const SubmissionDetail = () => {
         </span>
       </div>
 
-      <div className="bg-surface border border-border overflow-hidden">
+      <div className="card card-hover">
         <div className="p-4">
           <h1 className="text-[15px] font-semibold text-text-primary leading-snug">{submission.name}</h1>
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <StatusBadge status={submission.status} />
-            <span className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary capitalize">
+            <span className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary capitalize rounded-md">
               {submission.family}
             </span>
           </div>
@@ -154,7 +154,7 @@ const SubmissionDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
         <div className="flex flex-col gap-3">
           {submission.description && (
-            <section className="bg-surface border border-border p-4">
+            <section className="card card-hover p-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2">
                 Description
               </h2>
@@ -163,7 +163,7 @@ const SubmissionDetail = () => {
           )}
 
           {submission.promotedAssetId ? (
-            <section className="rounded-xl border border-border bg-brand-50/50 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+            <section className="rounded-xl border border-border bg-brand-50/50 px-4 py-3 flex flex-wrap items-center justify-between gap-2 shadow-card card-hover">
               <span className="text-[11px] font-semibold text-brand-900">Listed in catalog</span>
               <button
                 type="button"
@@ -178,29 +178,27 @@ const SubmissionDetail = () => {
 
           <QuickStartPanel text={quickStartText} />
 
-          {demoSrc ? (
-            <section className="bg-surface border border-border p-4 rounded-xl shadow-card">
-              <div className="text-[9px] font-semibold text-text-muted uppercase tracking-wide mb-2">Demo video</div>
-              <button
-                type="button"
-                onClick={() => setDemoOpen(true)}
-                className="py-2 px-3 border border-brand bg-brand/10 text-brand text-[12px] font-semibold hover:bg-brand/15 rounded-lg inline-flex items-center gap-2 transition-colors duration-180 focus-ring"
-              >
-                <PlayCircle className="w-4 h-4 text-brand shrink-0" strokeWidth={1.75} />
-                Launch demo
-              </button>
-            </section>
-          ) : null}
+          <section className="card card-hover p-4">
+            <div className="text-[9px] font-semibold text-text-muted uppercase tracking-wide mb-2">
+              Demo video
+            </div>
+            <button
+              type="button"
+              onClick={() => setDemoOpen(true)}
+              className="py-2 px-3 rounded-lg border border-brand bg-brand/10 text-brand text-[12px] font-semibold hover:bg-brand/15 inline-flex items-center gap-2 transition-colors duration-180 focus-ring shadow-sm"
+            >
+              <PlayCircle className="w-4 h-4 text-brand shrink-0" strokeWidth={1.75} />
+              Launch demo
+            </button>
+          </section>
 
           <AttachedDocumentsPanel
             attachments={attachments}
-            resolveHref={(relpath) =>
-              resolveMediaSrc(`/v1/uploads/${String(relpath || '').replace(/^\/+/, '')}`)
-            }
+            resolveHref={resolveAttachmentHref}
           />
 
           {(submission.cloud || submission.maturity || submission.version || submission.gitUrl || submission.owner || submission.team) && (
-            <section className="bg-surface border border-border p-4">
+            <section className="card card-hover p-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-3">
                 Technical details
               </h2>
@@ -226,13 +224,13 @@ const SubmissionDetail = () => {
                 {submission.cloud && (
                   <div>
                     <div className="text-[9px] font-semibold text-text-muted uppercase tracking-wide mb-0.5">Cloud</div>
-                    <div className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary inline-block uppercase">{submission.cloud}</div>
+                    <div className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary inline-block uppercase rounded-md">{submission.cloud}</div>
                   </div>
                 )}
                 {submission.maturity && (
                   <div>
                     <div className="text-[9px] font-semibold text-text-muted uppercase tracking-wide mb-0.5">Maturity</div>
-                    <div className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary inline-block capitalize">{submission.maturity}</div>
+                    <div className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary inline-block capitalize rounded-md">{submission.maturity}</div>
                   </div>
                 )}
                 {submission.coContributors && (
@@ -265,7 +263,7 @@ const SubmissionDetail = () => {
                   <div className="text-[9px] font-semibold text-text-muted uppercase tracking-wide mb-1">Tags</div>
                   <div className="flex flex-wrap gap-1">
                     {submission.tags.split(',').filter(Boolean).map((t, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-px bg-surface-3 text-text-secondary border border-border">{t.trim()}</span>
+                      <span key={i} className="text-[10px] px-1.5 py-px bg-surface-3 text-text-secondary border border-border rounded-md">{t.trim()}</span>
                     ))}
                   </div>
                 </div>
@@ -273,19 +271,19 @@ const SubmissionDetail = () => {
             </section>
           )}
 
-          <section className="bg-surface border border-border p-4">
+          <section className="card card-hover p-4">
             <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2 flex items-center gap-1.5">
               <Activity className="w-3 h-3" strokeWidth={1.5} />
               AI review
             </h2>
             {submission.aiScore == null ? (
-              <div className="flex items-center gap-2 p-3 bg-surface-3 border border-border text-[12px] text-text-secondary">
+              <div className="flex items-center gap-2 p-3 bg-surface-3 border border-border text-[12px] text-text-secondary rounded-lg">
                 <Clock className="w-4 h-4 text-text-muted flex-shrink-0" strokeWidth={1.5} />
                 Review in progress. This may take a short time.
               </div>
             ) : (
               <div className="flex flex-col sm:flex-row gap-4">
-                <div className="border border-border bg-surface-3 px-4 py-3 text-center min-w-[100px]">
+                <div className="border border-border bg-surface-3 px-4 py-3 text-center min-w-[100px] rounded-lg">
                   <div className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-1">
                     Score
                   </div>
@@ -318,7 +316,7 @@ const SubmissionDetail = () => {
           </section>
 
           {canAct && (
-            <section className="bg-surface border border-border p-4">
+            <section className="card card-hover p-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2">
                 Governance decision
               </h2>
@@ -326,14 +324,14 @@ const SubmissionDetail = () => {
                 value={govNote}
                 onChange={(e) => setGovNote(e.target.value)}
                 placeholder="Notes for the record (optional)"
-                className="w-full p-2 border border-border bg-surface text-[12px] text-text-primary outline-none focus:border-border-mid min-h-[72px] resize-y mb-3"
+                className="w-full p-2 rounded-lg border border-border bg-surface text-[12px] text-text-primary outline-none focus:border-border-mid min-h-[72px] resize-y mb-3 shadow-inner"
               />
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => handleAction('approved')}
                   disabled={!!actionLoading}
-                  className="py-1.5 px-3 border border-brand bg-brand text-white text-[12px] font-semibold hover:bg-brand-hover active:bg-brand-active disabled:opacity-50 inline-flex items-center gap-2 rounded-enterprise-md shadow-enterprise transition-colors duration-180 focus-ring"
+                  className="py-1.5 px-3 rounded-lg border border-brand bg-brand text-white text-[12px] font-semibold hover:bg-brand-hover active:bg-brand-active disabled:opacity-50 inline-flex items-center gap-2 shadow-enterprise transition-colors duration-180 focus-ring"
                 >
                   {actionLoading === 'approved' ? <Spinner size="sm" color="white" /> : null}
                   Approve
@@ -342,7 +340,7 @@ const SubmissionDetail = () => {
                   type="button"
                   onClick={() => handleAction('remediation')}
                   disabled={!!actionLoading}
-                  className="py-1.5 px-3 border border-border-mid bg-surface text-text-primary text-[12px] font-semibold hover:bg-brand-muted hover:border-brand-muted-border disabled:opacity-50 inline-flex items-center gap-2 rounded-enterprise-md transition-colors duration-180 focus-ring"
+                  className="py-1.5 px-3 rounded-lg border border-border-mid bg-surface text-text-primary text-[12px] font-semibold hover:bg-brand-muted hover:border-brand-muted-border disabled:opacity-50 inline-flex items-center gap-2 transition-colors duration-180 focus-ring"
                 >
                   {actionLoading === 'remediation' ? <Spinner size="sm" color="muted" /> : null}
                   Request remediation
@@ -352,7 +350,7 @@ const SubmissionDetail = () => {
           )}
         </div>
 
-        <aside className="bg-surface border border-border p-4 h-fit">
+        <aside className="card card-hover p-4 h-fit">
           <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2 flex items-center gap-1.5">
             <Activity className="w-3 h-3" strokeWidth={1.5} />
             Status history

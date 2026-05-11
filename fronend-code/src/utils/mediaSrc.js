@@ -9,3 +9,15 @@ export function resolveMediaSrc(urlPath) {
   }
   return path;
 }
+
+/**
+ * Attachment `relpath` from API: may be an absolute https URL (e.g. blob storage) or a server upload key.
+ */
+export function resolveAttachmentHref(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  const trimmed = s.replace(/^\/+/, '');
+  if (trimmed.startsWith('v1/')) return resolveMediaSrc(`/${trimmed}`);
+  return resolveMediaSrc(`/v1/uploads/${trimmed}`);
+}
