@@ -9,7 +9,14 @@ import {
   FolderPlus,
   Lock,
 } from 'lucide-react';
-import { createSubmission, uploadSubmissionDemoVideo, uploadSubmissionAttachments } from '../api/submissions';
+import {
+  createSubmission,
+  getSubmissionById,
+  unwrapSubmissionResponse,
+  uploadSubmissionArchitectureDiagram,
+  uploadSubmissionAttachments,
+  uploadSubmissionDemoVideo,
+} from '../api/submissions';
 import { getFamilies } from '../api/families';
 import { getCatalogMasters } from '../api/catalog';
 import { useAuth } from '../context/AuthContext';
@@ -17,8 +24,24 @@ import { useToast } from '../context/ToastContext';
 import Spinner from '../components/ui/Spinner';
 import PageLoader from '../components/ui/PageLoader';
 import ErrorState from '../components/ui/ErrorState';
+import { resolveMediaSrc } from '../utils/mediaSrc';
+import {
+  validateArchitectureDiagramFile,
+  validateAttachmentFiles,
+  validateDemoVideoFile,
+} from '../utils/submissionUploadValidation';
 
 const labelClass = 'text-[10.5px] font-bold text-text-secondary uppercase tracking-[0.6px]';
+
+/** Resolve API relative paths or absolute blob URLs for previews/downloads */
+function resolveUploadedAssetHref(raw) {
+  if (!raw) return '';
+  const s = String(raw).trim();
+  if (/^https?:\/\//i.test(s)) return s;
+  const trimmed = s.replace(/^\/+/, '');
+  if (trimmed.startsWith('v1/')) return resolveMediaSrc(`/${trimmed}`);
+  return resolveMediaSrc(`/v1/uploads/${trimmed}`);
+}
 
 const inpErr = 'border-red-300/90 focus:border-red-400 focus:ring-red-500/20';
 
@@ -139,6 +162,8 @@ const Submit = () => {
   const [declared, setDeclared] = useState(false);
   const [demoVideoFile, setDemoVideoFile] = useState(null);
   const [supportingFiles, setSupportingFiles] = useState([]);
+  const [architectureDiagramFile, setArchitectureDiagramFile] = useState(null);
+  const [uploadErrors, setUploadErrors] = useState({ demo: '', architecture: '', supporting: '' });
 
   const [form, setForm] = useState({
     name: '',
@@ -166,12 +191,25 @@ const Submit = () => {
     const errs = {};
     if (!form.name.trim()) errs.name = 'Accelerator name is required.';
     if (!form.description.trim()) errs.description = 'Short description is required.';
+
+    const demoErr = validateDemoVideoFile(demoVideoFile);
+    const archErr = validateArchitectureDiagramFile(architectureDiagramFile);
+    const attErr = validateAttachmentFiles(supportingFiles);
+    setUploadErrors({
+      demo: demoErr.ok ? '' : demoErr.message,
+      architecture: archErr.ok ? '' : archErr.message,
+      supporting: attErr.ok ? '' : attErr.message,
+    });
+    if (!demoErr.ok) errs.uploadFiles = demoErr.message;
+    else if (!archErr.ok) errs.uploadFiles = archErr.message;
+    else if (!attErr.ok) errs.uploadFiles = attErr.message;
+
     return errs;
   };
 
   const validateStep2 = () => {
     const errs = {};
-    if (!form.family) errs.family = 'Please select a platform family.';
+    if (!String(form.family ?? '').trim()) errs.family = 'Please select a platform family.';
     return errs;
   };
 
@@ -179,6 +217,9 @@ const Submit = () => {
     const errs = validate();
     if (Object.keys(errs).length) {
       setErrors(errs);
+      if (errs.uploadFiles) {
+        toast.error(errs.uploadFiles);
+      }
       return;
     }
     setErrors({});
@@ -193,60 +234,174 @@ const Submit = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const onDemoVideoChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setDemoVideoFile(null);
+      setUploadErrors((p) => ({ ...p, demo: '' }));
+      return;
+    }
+    const v = validateDemoVideoFile(file);
+    if (!v.ok) {
+      setDemoVideoFile(null);
+      setUploadErrors((p) => ({ ...p, demo: v.message }));
+      toast.error(v.message);
+      e.target.value = '';
+      return;
+    }
+    setUploadErrors((p) => ({ ...p, demo: '' }));
+    setDemoVideoFile(file);
+  };
+
+  const onArchitectureDiagramChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    if (!file) {
+      setArchitectureDiagramFile(null);
+      setUploadErrors((p) => ({ ...p, architecture: '' }));
+      return;
+    }
+    const v = validateArchitectureDiagramFile(file);
+    if (!v.ok) {
+      setArchitectureDiagramFile(null);
+      setUploadErrors((p) => ({ ...p, architecture: v.message }));
+      toast.error(v.message);
+      e.target.value = '';
+      return;
+    }
+    setUploadErrors((p) => ({ ...p, architecture: '' }));
+    setArchitectureDiagramFile(file);
+  };
+
+  const onSupportingFilesChange = (e) => {
+    const files = e.target.files ? [...e.target.files] : [];
+    if (files.length === 0) {
+      setSupportingFiles([]);
+      setUploadErrors((p) => ({ ...p, supporting: '' }));
+      return;
+    }
+    const v = validateAttachmentFiles(files);
+    if (!v.ok) {
+      setSupportingFiles([]);
+      setUploadErrors((p) => ({ ...p, supporting: v.message }));
+      toast.error(v.message);
+      e.target.value = '';
+      return;
+    }
+    setUploadErrors((p) => ({ ...p, supporting: '' }));
+    setSupportingFiles(files);
+  };
+
   const handleSubmit = async () => {
     if (!declared) {
       toast.error('Please accept the declaration before submitting.');
       return;
     }
+
+    const demoErr = validateDemoVideoFile(demoVideoFile);
+    const archErr = validateArchitectureDiagramFile(architectureDiagramFile);
+    const attErr = validateAttachmentFiles(supportingFiles);
+    setUploadErrors({
+      demo: demoErr.ok ? '' : demoErr.message,
+      architecture: archErr.ok ? '' : archErr.message,
+      supporting: attErr.ok ? '' : attErr.message,
+    });
+    if (!demoErr.ok) {
+      toast.error(demoErr.message);
+      return;
+    }
+    if (!archErr.ok) {
+      toast.error(archErr.message);
+      return;
+    }
+    if (!attErr.ok) {
+      toast.error(attErr.message);
+      return;
+    }
+
+    const submissionPayload = {
+      name: form.name.trim(),
+      family: String(form.family ?? '').trim().toLowerCase(),
+      description: form.description.trim(),
+      owner: form.owner.trim(),
+      team: form.team.trim(),
+      coContributors: form.coContributors.trim(),
+      version: form.version.trim(),
+      cloud: form.cloud,
+      maturity: form.maturity,
+      gitUrl: form.gitUrl.trim(),
+      architecture: form.architecture.trim(),
+      prerequisites: form.prerequisites.trim(),
+      tags: form.tags.trim(),
+      quickStart: form.quickStart.trim(),
+    };
+
+    if (!submissionPayload.name || !submissionPayload.description || !submissionPayload.family) {
+      toast.error(
+        !submissionPayload.family
+          ? 'Please select a platform family before submitting.'
+          : 'Please complete accelerator name and description before submitting.',
+      );
+      setStep(!submissionPayload.family ? 2 : 1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const res = await createSubmission({
-        name: form.name.trim(),
-        family: form.family,
-        description: form.description.trim(),
-        owner: form.owner.trim(),
-        team: form.team.trim(),
-        coContributors: form.coContributors.trim(),
-        version: form.version.trim(),
-        cloud: form.cloud,
-        maturity: form.maturity,
-        gitUrl: form.gitUrl.trim(),
-        architecture: form.architecture.trim(),
-        prerequisites: form.prerequisites.trim(),
-        tags: form.tags.trim(),
-        quickStart: form.quickStart.trim(),
-      });
-      const result = res.data?.data || res.data;
+      const res = await createSubmission(submissionPayload);
+      const result = unwrapSubmissionResponse(res);
       const regId = result.registrationId || result.id || '';
-      setSubmissionResult(result);
-
-      if (regId && demoVideoFile) {
-        try {
-          await uploadSubmissionDemoVideo(regId, demoVideoFile);
-        } catch (upErr) {
-          toast.error(
-            upErr.response?.data?.message ||
-              'Submission saved, but demo upload failed. You may upload files again from Pipeline detail.',
-          );
-          toast.success('Accelerator submitted.');
-          return;
-        }
+      if (!regId) {
+        toast.error('Submission was created but no registration ID was returned.');
+        return;
       }
 
-      if (regId && supportingFiles.length > 0) {
+      let uploadHadError = false;
+
+      const runUpload = async (label, fn) => {
         try {
-          await uploadSubmissionAttachments(regId, supportingFiles);
+          await fn();
         } catch (upErr) {
+          uploadHadError = true;
           toast.error(
             upErr.response?.data?.message ||
-              'Submission saved, but one or more file uploads failed. Retry from Pipeline detail.',
+              `${label} upload failed. Submission is saved — retry uploads from Pipeline.`,
           );
-          toast.success('Accelerator submitted.');
-          return;
         }
+      };
+
+      if (demoVideoFile) {
+        await runUpload('Demo video', () => uploadSubmissionDemoVideo(regId, demoVideoFile));
       }
 
-      toast.success('Accelerator submitted successfully!');
+      if (architectureDiagramFile) {
+        await runUpload('Architecture diagram', () =>
+          uploadSubmissionArchitectureDiagram(regId, architectureDiagramFile),
+        );
+      }
+
+      if (supportingFiles.length > 0) {
+        await runUpload('Attachments', () => uploadSubmissionAttachments(regId, supportingFiles));
+      }
+
+      let merged = { ...result };
+      try {
+        const detailRes = await getSubmissionById(regId);
+        const detail = unwrapSubmissionResponse(detailRes);
+        if (detail && typeof detail === 'object') {
+          merged = { ...merged, ...detail };
+        }
+      } catch {
+        /* Success UI still works from create + upload responses */
+      }
+
+      setSubmissionResult(merged);
+
+      if (!uploadHadError) {
+        toast.success('Accelerator submitted successfully!');
+      } else {
+        toast.success('Accelerator submitted — some uploads failed; retry from Pipeline.');
+      }
     } catch (e) {
       toast.error(e.response?.data?.message || 'Submission failed. Please try again.');
     } finally {
@@ -261,6 +416,8 @@ const Submit = () => {
     setSubmissionResult(null);
     setDemoVideoFile(null);
     setSupportingFiles([]);
+    setArchitectureDiagramFile(null);
+    setUploadErrors({ demo: '', architecture: '', supporting: '' });
     const defaultCloud = cloudOpts.find((cl) => cl.code === 'gcp')?.code || cloudOpts[cloudOpts.length - 1]?.code || '';
     const defaultMaturity =
       maturityOpts.find((m) => m.code === 'experimental')?.code || maturityOpts[maturityOpts.length - 1]?.code || '';
@@ -322,6 +479,84 @@ const Submit = () => {
                 <div className="text-sm font-semibold text-text-primary">1–2 business days</div>
               </div>
             </div>
+
+            {(() => {
+              const demoHref = resolveUploadedAssetHref(
+                submissionResult.demo_video_relpath || submissionResult.demoVideoUrl || '',
+              );
+              const archHref = resolveUploadedAssetHref(
+                submissionResult.architecture || submissionResult.architectureUrl || '',
+              );
+              const rawAttachments =
+                submissionResult.submission_attachments || submissionResult.submissionAttachments || [];
+              const attachments = Array.isArray(rawAttachments) ? rawAttachments : [];
+              if (!demoHref && !archHref && attachments.length === 0) return null;
+              return (
+                <div className="mt-6 text-left rounded-xl border border-border bg-surface-muted/40 p-4 space-y-3">
+                  <div className="text-2xs font-semibold text-text-muted uppercase tracking-wide">Uploaded assets</div>
+                  <ul className="text-sm text-text-secondary space-y-2">
+                    {demoHref ? (
+                      <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <span className="font-semibold text-text-primary shrink-0">Demo video:</span>
+                        <a
+                          href={demoHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-700 hover:underline font-medium break-all"
+                        >
+                          Open / download
+                        </a>
+                      </li>
+                    ) : null}
+                    {archHref ? (
+                      <li className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                        <span className="font-semibold text-text-primary shrink-0">Architecture diagram:</span>
+                        <a
+                          href={archHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-brand-700 hover:underline font-medium break-all"
+                        >
+                          Open / download
+                        </a>
+                      </li>
+                    ) : null}
+                    {attachments.length > 0 ? (
+                      <li>
+                        <span className="font-semibold text-text-primary">Attachments:</span>
+                        <ul className="mt-1.5 space-y-1 pl-1 border-l-2 border-brand-200/80 ml-0.5">
+                          {attachments.map((att, idx) => {
+                            const name = att?.name || att?.relpath || `File ${idx + 1}`;
+                            const href = resolveUploadedAssetHref(att?.relpath || '');
+                            return (
+                              <li key={`${name}-${idx}`} className="text-[13px]">
+                                {href ? (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-brand-700 hover:underline break-all"
+                                  >
+                                    {name}
+                                  </a>
+                                ) : (
+                                  <span className="break-all">{name}</span>
+                                )}
+                                {typeof att?.bytes === 'number' ? (
+                                  <span className="text-2xs text-text-muted tabular-nums ml-1">
+                                    ({(att.bytes / 1024).toFixed(1)} KB)
+                                  </span>
+                                ) : null}
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </li>
+                    ) : null}
+                  </ul>
+                </div>
+              );
+            })()}
 
             <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-center gap-2 sm:gap-3 mt-10">
               <button type="button" onClick={resetForm} className="btn-ghost py-2.5 px-5 justify-center">
@@ -509,16 +744,21 @@ const Submit = () => {
                 </div>
               </div>
 
+              {errors.uploadFiles ? <div className="pt-1">{errLine(errors.uploadFiles)}</div> : null}
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-brand-100/70">
                 <div>
                   <label className={labelClass}>Demo video</label>
-                  <p className="text-2xs text-text-muted mt-0.5 mb-2 leading-relaxed">MP4, WebM, MOV — playable from the catalog.</p>
+                  <p className="text-2xs text-text-muted mt-0.5 mb-2 leading-relaxed">
+                    MP4, WebM, MOV — max 120 MB — playable from the catalog.
+                  </p>
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
                     className="inp text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold"
-                    onChange={(e) => setDemoVideoFile(e.target.files?.[0] || null)}
+                    onChange={onDemoVideoChange}
                   />
+                  {uploadErrors.demo ? errLine(uploadErrors.demo) : null}
                   {demoVideoFile ? (
                     <p className="text-2xs text-brand-800 font-medium mt-1.5 truncate" title={demoVideoFile.name}>
                       Selected: {demoVideoFile.name}
@@ -527,15 +767,36 @@ const Submit = () => {
                 </div>
                 <div>
                   <label className={labelClass}>Supporting files</label>
-                  <p className="text-2xs text-text-muted mt-0.5 mb-2 leading-relaxed">PDFs, YAML, docs — multiple files.</p>
+                  <p className="text-2xs text-text-muted mt-0.5 mb-2 leading-relaxed">
+                    Any file type — multiple files — max 40 MB each.
+                  </p>
                   <input
                     type="file"
                     multiple
                     className="inp text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold"
-                    onChange={(e) => setSupportingFiles(e.target.files ? [...e.target.files] : [])}
+                    onChange={onSupportingFilesChange}
                   />
+                  {uploadErrors.supporting ? errLine(uploadErrors.supporting) : null}
                   {supportingFiles.length > 0 ? (
                     <p className="text-2xs text-brand-800 font-medium mt-1.5">{supportingFiles.length} file(s) selected</p>
+                  ) : null}
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Architecture diagram</label>
+                  <p className="text-2xs text-text-muted mt-0.5 mb-2 leading-relaxed">
+                    PNG, JPG, SVG, WebP, or PDF — max 20 MB — one diagram file for reviewers and catalog context.
+                  </p>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/svg+xml,image/webp,application/pdf,.png,.jpg,.jpeg,.svg,.webp,.pdf"
+                    className="inp text-[12px] file:mr-3 file:py-1 file:px-2 file:rounded-md file:border file:border-border file:bg-surface-muted file:text-[11px] file:font-semibold"
+                    onChange={onArchitectureDiagramChange}
+                  />
+                  {uploadErrors.architecture ? errLine(uploadErrors.architecture) : null}
+                  {architectureDiagramFile ? (
+                    <p className="text-2xs text-brand-800 font-medium mt-1.5 truncate" title={architectureDiagramFile.name}>
+                      Selected: {architectureDiagramFile.name}
+                    </p>
                   ) : null}
                 </div>
               </div>
@@ -797,6 +1058,14 @@ const Submit = () => {
                     <div className="text-2xs font-semibold text-text-muted uppercase tracking-wide mb-1">Supporting files</div>
                     <div className="text-sm text-text-primary">
                       {supportingFiles.length > 0 ? `${supportingFiles.length} file(s) selected` : 'None selected'}
+                    </div>
+                  </div>
+                  <div className="p-3.5 sm:col-span-2 border-t border-border bg-surface-muted/15">
+                    <div className="text-2xs font-semibold text-text-muted uppercase tracking-wide mb-1">
+                      Architecture diagram
+                    </div>
+                    <div className="text-sm text-text-primary">
+                      {architectureDiagramFile ? architectureDiagramFile.name : 'None selected'}
                     </div>
                   </div>
                 </div>

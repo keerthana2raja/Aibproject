@@ -21,6 +21,7 @@ import AttachedDocumentsPanel from '../components/AttachedDocumentsPanel';
 import { useToast } from '../context/ToastContext';
 import { PIPELINE_STATUS_META } from '../theme/enterpriseMeta';
 import { resolveMediaSrc } from '../utils/mediaSrc';
+import { normalizeSubmissionDetail } from '../utils/submissionApiNormalize';
 
 const StatusBadge = ({ status }) => {
   const cfg = PIPELINE_STATUS_META[status] || { label: status };
@@ -57,7 +58,7 @@ const SubmissionDetail = () => {
     setError(null);
     try {
       const res = await getSubmissionById(id);
-      setSubmission(res.data.data);
+      setSubmission(normalizeSubmissionDetail(res.data.data));
     } catch (e) {
       setError(e.response?.data?.message || 'Submission not found.');
     } finally {

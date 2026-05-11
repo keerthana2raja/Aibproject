@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Bell,
   Search,
   Menu,
   UserRound,
-  Settings,
   LogOut,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -249,15 +247,6 @@ const Topbar = ({ onMenuClick }) => {
             aria-label="Search catalog"
           >
             <Search className="w-4 h-4" />
-          </button>
-
-          <button
-            type="button"
-            className="p-2 rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-muted hover:text-brand-600 shadow-sm transition-colors relative"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-500 ring-2 ring-surface" />
           </button>
 
           <div className="relative" ref={profileMenuRef}>
