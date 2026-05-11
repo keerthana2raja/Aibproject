@@ -1,11 +1,10 @@
-const path = require("path");
-const fs = require("fs");
 const mongoose = require("mongoose");
 const Asset = require("../models/asset");
 const Family = require("../models/family");
 const Activity = require("../models/activity");
 const { isSqliteMode, ASSET_FAMILY_PREFIX } = require("../config/sqlite");
 const { demoVideoUrlFromRelpath } = require("../utils/demoVideoUrl");
+const { deleteBlob } = require("../utils/blobUpload");
 const sqlite = require("./sqliteService");
 
 const MONGO_LIST_FIELDS =
@@ -27,17 +26,9 @@ function enrichMongoAssetLean(o) {
   };
 }
 
-async function unlinkDemoIfPresent(relativePath) {
-  const s = String(relativePath || "")
-    .trim()
-    .replace(/^\/+/, "");
-  if (!s) return;
-  try {
-    const full = path.join(process.cwd(), "data", "uploads", s);
-    if (fs.existsSync(full)) fs.unlinkSync(full);
-  } catch (_) {
-    /* ignore */
-  }
+async function unlinkDemoIfPresent(urlOrRelpath) {
+  // If it is a full Vercel Blob URL, delete it; local/relative paths are silently skipped.
+  await deleteBlob(urlOrRelpath);
 }
 
 // GET /assets — list with filters

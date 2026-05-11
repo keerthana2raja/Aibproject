@@ -1,3 +1,4 @@
+const path = require("path");
 const asyncHandler = require("express-async-handler");
 const {
   getAssets,
@@ -7,6 +8,7 @@ const {
   createCatalogAsset,
   attachDemoVideoToAsset,
 } = require("../services/assetService");
+const { uploadToBlob } = require("../utils/blobUpload");
 
 // GET /assets
 const listAssets = asyncHandler(async (req, res) => {
@@ -38,7 +40,8 @@ const createAsset = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, data: asset });
 });
 
-// POST /assets/:id/demo-video (multipart field name: demo)
+// POST /assets/:id/demo-video  (multipart field name: "demo")
+// File is held in memory by multer; we push it straight to Vercel Blob.
 const uploadAssetDemoVideo = asyncHandler(async (req, res) => {
   if (!req.file) {
     res.status(400).json({
@@ -47,8 +50,15 @@ const uploadAssetDemoVideo = asyncHandler(async (req, res) => {
     });
     return;
   }
-  const relativePath = `demos/${req.file.filename}`;
-  const asset = await attachDemoVideoToAsset(req.params.id, relativePath);
+
+  const assetId = String(req.params.id).toUpperCase().replace(/[^\w-]/g, "") || "ASSET";
+  const extRaw  = path.extname(req.file.originalname || "");
+  const ext     = /\.(mp4|webm|mov)$/i.test(extRaw) ? extRaw.toLowerCase() : ".mp4";
+  const pathname = `demos/${assetId}-${Date.now()}${ext}`;
+
+  const blobUrl = await uploadToBlob(pathname, req.file.buffer, req.file.mimetype || "video/mp4");
+
+  const asset = await attachDemoVideoToAsset(req.params.id, blobUrl);
   res.status(200).json({ success: true, data: asset });
 });
 

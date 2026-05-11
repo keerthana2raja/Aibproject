@@ -9,7 +9,7 @@ let mongoConnected = false;
  */
 const connectDB = async () => {
   if (isSqliteMode()) {
-    initSqlite();
+    await initSqlite();
     return { provider: "sqlite" };
   }
 

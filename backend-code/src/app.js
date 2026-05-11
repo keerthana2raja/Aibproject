@@ -1,5 +1,4 @@
 require("dotenv").config();
-const path = require("path");
 const express = require("express");
 const cors = require("cors");
 const swaggerUi = require("swagger-ui-express");
@@ -21,14 +20,27 @@ const { isSqliteMode } = require("./config/sqlite");
 
 const app = express();
 
-app.use(cors({ origin: "*" }));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      "https://aimplify-1jeq0m2z2-keerthana-raj-s-projects.vercel.app",
+      /\.vercel\.app$/,
+    ],
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument, {
-  customSiteTitle: "AIMPLIFY API Docs",
-  swaggerOptions: { persistAuthorization: true },
-}));
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerDocument, {
+    customSiteTitle: "AIMPLIFY API Docs",
+    swaggerOptions: { persistAuthorization: true },
+  }),
+);
 
 app.get("/", (req, res) => res.redirect("/api-docs"));
 app.get("/v1/health", (req, res) =>
@@ -51,8 +63,7 @@ app.use("/v1/users", userRoutes);
 app.use("/v1/catalog", catalogRoutes);
 app.use("/v1/help", helpRoutes);
 
-const uploadsStaticRoot = path.join(process.cwd(), "data", "uploads");
-app.use("/v1/uploads", express.static(uploadsStaticRoot, { maxAge: "1d", fallthrough: true }));
+// NOTE: /v1/uploads static serving removed — files now live in Vercel Blob (public URLs stored in DB).
 
 // Legacy registration routes (kept for backward compatibility)
 app.use("/v1", registrationRoutes);

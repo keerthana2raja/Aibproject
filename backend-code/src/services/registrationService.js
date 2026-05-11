@@ -73,8 +73,8 @@ const simulateAIReview = async (docId) => {
 
 const createRegistration = async (data, submitter) => {
   if (isSqliteMode()) {
-    const registrationId = sqlite.nextRegistrationIdSqlite();
-    const result = sqlite.registrationCreateSqlite({
+    const registrationId = await sqlite.nextRegistrationIdSqlite();
+    const result = await sqlite.registrationCreateSqlite({
       registrationId,
       name: data.name,
       family: data.family,
@@ -171,7 +171,7 @@ const appendSubmissionAttachmentsBatch = async (registrationId, metas) => {
 
 const updateRegistration = async (id, updates, updatedBy) => {
   if (isSqliteMode()) {
-    const reg = sqlite.registrationUpdateSqlite(id, updates, updatedBy);
+    const reg = await sqlite.registrationUpdateSqlite(id, updates, updatedBy);
     await logActivity({
       actorName: updatedBy || "System",
       action: "updated",
