@@ -44,7 +44,7 @@ const Logout = () => {
           </h1>
           <p className="text-[13px] text-shell-nav-muted mt-3 leading-relaxed">
             Your local session tokens have been cleared. Sign in again to continue viewing the accelerator
-            catalogue and pipeline.
+            catalog and pipeline.
           </p>
         </div>
       </div>

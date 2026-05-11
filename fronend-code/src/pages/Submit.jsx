@@ -358,7 +358,7 @@ const Submit = () => {
           <div className="min-w-0 pt-0.5">
             <h1 className="text-[17px] font-semibold text-text-primary tracking-tight leading-snug">Submit accelerator</h1>
             <p className="text-xs text-text-muted mt-1 leading-relaxed max-w-xl">
-              Three short steps. Your entry is reviewed before it can appear in the catalogue. Fields marked{' '}
+              Three short steps. Your entry is reviewed before it can appear in the catalog. Fields marked{' '}
               <span className="text-text-secondary font-medium">*</span> are required.
             </p>
           </div>
@@ -503,7 +503,7 @@ const Submit = () => {
                 <div className="min-w-0">
                   <h3 className="text-[13px] font-semibold text-text-primary tracking-tight">Demo video, documents &amp; quick start</h3>
                   <p className="text-2xs text-text-muted mt-1 leading-relaxed">
-                    Attach materials now so reviewers and the eventual catalogue listing show commands and downloadable files —
+                    Attach materials now so reviewers and the eventual catalog listing show commands and downloadable files —
                     optional, but encouraged.
                   </p>
                 </div>
@@ -512,7 +512,7 @@ const Submit = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-brand-100/70">
                 <div>
                   <label className={labelClass}>Demo video</label>
-                  <p className="text-2xs text-text-muted mt-0.5 mb-2 leading-relaxed">MP4, WebM, MOV — playable from the catalogue.</p>
+                  <p className="text-2xs text-text-muted mt-0.5 mb-2 leading-relaxed">MP4, WebM, MOV — playable from the catalog.</p>
                   <input
                     type="file"
                     accept="video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
@@ -561,7 +561,7 @@ const Submit = () => {
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row justify-between items-stretch sm:items-center gap-3 pt-6 mt-6 border-t border-border">
-              <button type="button" className="btn-ghost justify-center sm:justify-start" onClick={() => navigate('/catalogue')}>
+              <button type="button" className="btn-ghost justify-center sm:justify-start" onClick={() => navigate('/catalog')}>
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Cancel
               </button>
@@ -826,7 +826,7 @@ const Submit = () => {
                   />
                   <label htmlFor="declare" className="text-xs text-text-secondary leading-relaxed cursor-pointer select-none text-left">
                     I confirm this accelerator complies with organizational IP and security guidelines and may be reviewed
-                    before publication in the catalogue.
+                    before publication in the catalog.
                   </label>
                 </div>
               </div>

@@ -144,7 +144,7 @@ const Sidebar = ({ onClose, pendingCount = 0 }) => {
           }}
           collapsed={collapsed}
         />
-        <NavItem to="/catalogue" icon={FolderSearch} label="Catalogue" onClick={onClose} collapsed={collapsed} />
+        <NavItem to="/catalog" icon={FolderSearch} label="Catalog" onClick={onClose} collapsed={collapsed} />
 
         <SectionLabel label="Manage" collapsed={collapsed} />
         <NavItem to="/submit" icon={FolderPlus} label="Submit Asset" onClick={onClose} collapsed={collapsed} />

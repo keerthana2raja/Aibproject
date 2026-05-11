@@ -280,9 +280,9 @@ const Dashboard = () => {
           <button
             type="button"
             className="text-xs font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center gap-0.5"
-            onClick={() => navigate('/catalogue')}
+            onClick={() => navigate('/catalog')}
           >
-            Catalogue <ArrowUpRight className="w-3.5 h-3.5" />
+            Catalog <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
         {loading ? (
@@ -353,10 +353,10 @@ const Dashboard = () => {
               </div>
               <button
                 type="button"
-                onClick={() => navigate('/catalogue')}
+                onClick={() => navigate('/catalog')}
                 className="text-xs font-semibold text-brand-600 hover:text-brand-700 inline-flex items-center gap-0.5"
               >
-                Catalogue <ArrowUpRight className="w-3.5 h-3.5" />
+                Catalog <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
             {loading ? (

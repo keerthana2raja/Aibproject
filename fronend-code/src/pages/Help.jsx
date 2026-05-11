@@ -162,7 +162,7 @@ const Help = () => {
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search catalogue (assets & families from server)…"
+          placeholder="Search catalog (assets & families from server)…"
           className="w-full pl-8 pr-8 py-2 border border-border bg-surface text-[12px] outline-none focus:border-border-mid focus:ring-1 focus:ring-border-mid"
         />
         {searching && (
@@ -213,7 +213,7 @@ const Help = () => {
               ))}
             </ul>
           ) : (
-            <span className="text-text-muted">No catalogue matches.</span>
+            <span className="text-text-muted">No catalog matches.</span>
           )}
         </div>
       )}

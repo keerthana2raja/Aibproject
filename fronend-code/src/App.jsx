@@ -41,8 +41,8 @@ function App() {
         >
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard"  element={<Dashboard />} />
-          <Route path="catalogue" element={<Catalogue />} />
-          <Route path="catalogue/new" element={<AddCatalogue />} />
+          <Route path="catalog" element={<Catalogue />} />
+          <Route path="catalog/new" element={<AddCatalogue />} />
           <Route path="family/:id" element={<FamilyDetail />} />
           <Route path="detail/:id" element={<Detail />} />
           <Route path="submit"     element={<Submit />} />

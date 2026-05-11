@@ -128,10 +128,10 @@ const Detail = () => {
       <nav className="flex items-center gap-1 text-[11px] text-text-muted flex-wrap" aria-label="Breadcrumb">
         <button
           type="button"
-          onClick={() => navigate('/catalogue')}
+          onClick={() => navigate('/catalog')}
           className="text-text-secondary font-medium hover:underline focus-ring px-0.5"
         >
-          Catalogue
+          Catalog
         </button>
         <ChevronRight className="w-3 h-3 opacity-60 flex-shrink-0" strokeWidth={1.5} />
         <button
