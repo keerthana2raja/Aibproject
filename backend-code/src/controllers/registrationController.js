@@ -8,6 +8,7 @@ const {
   updateRegistration,
   saveSubmissionDemoVideoRelpath,
   appendSubmissionAttachmentsBatch,
+  saveSubmissionArchitectureUrl,
 } = require("../services/registrationService");
 const { uploadToBlob } = require("../utils/blobUpload");
 const sqlite = require("../services/sqliteService");
@@ -126,6 +127,41 @@ const uploadSubmissionAttachments = asyncHandler(async (req, res) => {
   res.status(200).json({ success: true, data: reg });
 });
 
+// POST /submissions/:id/architecture  (multipart field: "architecture")
+const uploadSubmissionArchitecture = asyncHandler(async (req, res) => {
+  if (!req.file) {
+    res.status(400).json({
+      success: false,
+      message: 'Attach a diagram using field name "architecture" (PNG, JPG, SVG, WebP, or PDF).',
+    });
+    return;
+  }
+
+  const regId    = String(req.params.id).toUpperCase().replace(/[^\w-]/g, "").slice(0, 24) || "SUB";
+  const extRaw   = path.extname(req.file.originalname || "");
+  const ext      = /\.(png|jpe?g|svg|webp|pdf)$/i.test(extRaw) ? extRaw.toLowerCase() : ".png";
+  const pathname = `submissions/${regId}-arch-${Date.now()}${ext}`;
+
+  const blobUrl = await uploadToBlob(pathname, req.file.buffer, req.file.mimetype || "image/png");
+
+  const reg = await saveSubmissionArchitectureUrl(req.params.id, blobUrl);
+
+  // Immediately sync to asset table if a pre-inserted asset exists
+  if (isSqliteMode() && reg.promotedAssetId) {
+    try {
+      const db = require("../config/sqlite").getDb();
+      await db.execute({
+        sql: "UPDATE assets SET architecture=? WHERE id=?",
+        args: [blobUrl, reg.promotedAssetId],
+      });
+    } catch (e) {
+      console.error("[architecture] asset sync failed:", e.message);
+    }
+  }
+
+  res.status(200).json({ success: true, data: reg });
+});
+
 module.exports = {
   listRegistrations,
   registerAsset,
@@ -133,4 +169,5 @@ module.exports = {
   patchRegistration,
   uploadSubmissionDemoVideo,
   uploadSubmissionAttachments,
+  uploadSubmissionArchitecture,
 };

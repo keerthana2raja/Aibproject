@@ -169,6 +169,16 @@ const appendSubmissionAttachmentsBatch = async (registrationId, metas) => {
   return getRegistrationById(uid);
 };
 
+const saveSubmissionArchitectureUrl = async (registrationId, blobUrl) => {
+  if (isSqliteMode()) return sqlite.registrationSetArchitectureSqlite(registrationId, blobUrl);
+  const uid = String(registrationId).toUpperCase();
+  const reg = await Registration.findOne({ registrationId: uid });
+  if (!reg) throw { statusCode: 404, message: `Registration '${registrationId}' not found` };
+  reg.architecture = blobUrl;
+  await reg.save();
+  return getRegistrationById(uid);
+};
+
 const updateRegistration = async (id, updates, updatedBy) => {
   if (isSqliteMode()) {
     const reg = await sqlite.registrationUpdateSqlite(id, updates, updatedBy);
@@ -223,4 +233,5 @@ module.exports = {
   updateRegistration,
   saveSubmissionDemoVideoRelpath,
   appendSubmissionAttachmentsBatch,
+  saveSubmissionArchitectureUrl,
 };
