@@ -518,21 +518,120 @@ exports.registrationUpdateSqlite = async (id, updates, updatedBy) => {
 exports.registrationSetDemoVideoSqlite = async (registrationId, blobUrl) => {
   const db = getDb();
   const uid = String(registrationId).toUpperCase();
-  const res = await db.execute({ sql: "SELECT demo_video_relpath FROM registrations WHERE UPPER(registrationId)=?", args: [uid] });
+  const res = await db.execute({
+    sql: "SELECT demo_video_relpath, promoted_asset_id FROM registrations WHERE UPPER(registrationId)=?",
+    args: [uid],
+  });
   if (!res.rows[0]) throw { statusCode: 404, message: `Registration '${registrationId}' not found` };
   const prev = String(res.rows[0].demo_video_relpath || "").trim();
   if (prev && prev !== blobUrl) await deleteBlob(prev);
+
+  // Update registrations table
   await db.execute({ sql: "UPDATE registrations SET demo_video_relpath=? WHERE UPPER(registrationId)=?", args: [blobUrl, uid] });
+
+  // Sync to asset table — use promoted_asset_id or fall back to submission_id lookup
+  let assetId = String(res.rows[0].promoted_asset_id || "").trim();
+  if (!assetId) {
+    try {
+      const fallback = await db.execute({ sql: "SELECT id FROM assets WHERE submission_id=? LIMIT 1", args: [uid] });
+      assetId = String(fallback.rows[0]?.id || "").trim();
+      // also patch promoted_asset_id so future calls don't need the fallback
+      if (assetId) {
+        await db.execute({ sql: "UPDATE registrations SET promoted_asset_id=? WHERE UPPER(registrationId)=?", args: [assetId, uid] });
+      }
+    } catch (_) {}
+  }
+  if (assetId) {
+    try {
+      await db.execute({
+        sql: "UPDATE assets SET demo_video_relpath=?, demoReady=1, stats_demos=1 WHERE id=?",
+        args: [blobUrl, assetId],
+      });
+    } catch (e) {
+      console.error("registrationSetDemoVideoSqlite: asset sync failed:", e.message);
+    }
+  }
+
   return exports.registrationByIdSqlite(uid);
 };
 
 exports.registrationAppendAttachmentsSqlite = async (registrationId, metas) => {
   const db = getDb();
   const uid = String(registrationId).toUpperCase();
-  const res = await db.execute({ sql: "SELECT submission_attachments FROM registrations WHERE UPPER(registrationId)=?", args: [uid] });
+  const res = await db.execute({
+    sql: "SELECT submission_attachments, promoted_asset_id FROM registrations WHERE UPPER(registrationId)=?",
+    args: [uid],
+  });
   if (!res.rows[0]) throw { statusCode: 404, message: `Registration '${registrationId}' not found` };
   const merged = [...parseJson(res.rows[0].submission_attachments, []), ...metas];
-  await db.execute({ sql: "UPDATE registrations SET submission_attachments=? WHERE UPPER(registrationId)=?", args: [JSON.stringify(merged), uid] });
+
+  // Update registrations table
+  await db.execute({
+    sql: "UPDATE registrations SET submission_attachments=? WHERE UPPER(registrationId)=?",
+    args: [JSON.stringify(merged), uid],
+  });
+
+  // Sync to asset table immediately so GET /assets/:id returns attachments
+  let assetId2 = String(res.rows[0].promoted_asset_id || "").trim();
+  if (!assetId2) {
+    try {
+      const fallback = await db.execute({ sql: "SELECT id FROM assets WHERE submission_id=? LIMIT 1", args: [uid] });
+      assetId2 = String(fallback.rows[0]?.id || "").trim();
+      if (assetId2) await db.execute({ sql: "UPDATE registrations SET promoted_asset_id=? WHERE UPPER(registrationId)=?", args: [assetId2, uid] });
+    } catch (_) {}
+  }
+  if (assetId2) {
+    try {
+      const assetRes = await db.execute({ sql: "SELECT attachments FROM assets WHERE id=?", args: [assetId2] });
+      const prevAttachments = parseJson(assetRes.rows[0]?.attachments, []);
+      const mergedAsset = [...prevAttachments, ...metas];
+      await db.execute({
+        sql: "UPDATE assets SET attachments=? WHERE id=?",
+        args: [JSON.stringify(mergedAsset), assetId2],
+      });
+    } catch (e) {
+      console.error("registrationAppendAttachmentsSqlite: asset sync failed:", e.message);
+    }
+  }
+
+  return exports.registrationByIdSqlite(uid);
+};
+
+exports.registrationSetArchitectureSqlite = async (registrationId, blobUrl) => {
+  const db = getDb();
+  const uid = String(registrationId).toUpperCase();
+  const res = await db.execute({
+    sql: "SELECT promoted_asset_id FROM registrations WHERE UPPER(registrationId)=?",
+    args: [uid],
+  });
+  if (!res.rows[0]) throw { statusCode: 404, message: `Registration '${registrationId}' not found` };
+
+  // Update registrations table
+  await db.execute({
+    sql: "UPDATE registrations SET architecture=? WHERE UPPER(registrationId)=?",
+    args: [blobUrl, uid],
+  });
+
+  // Immediately sync blob URL to the pre-inserted asset — fallback to submission_id lookup
+  let archAssetId = String(res.rows[0].promoted_asset_id || "").trim();
+  if (!archAssetId) {
+    try {
+      const fallback = await db.execute({ sql: "SELECT id FROM assets WHERE submission_id=? LIMIT 1", args: [uid] });
+      archAssetId = String(fallback.rows[0]?.id || "").trim();
+      if (archAssetId) await db.execute({ sql: "UPDATE registrations SET promoted_asset_id=? WHERE UPPER(registrationId)=?", args: [archAssetId, uid] });
+    } catch (_) {}
+  }
+  if (archAssetId) {
+    try {
+      await db.execute({
+        sql: "UPDATE assets SET architecture=? WHERE id=?",
+        args: [blobUrl, archAssetId],
+      });
+    } catch (e) {
+      console.error("registrationSetArchitectureSqlite: asset sync failed:", e.message);
+    }
+  }
+
   return exports.registrationByIdSqlite(uid);
 };
 
