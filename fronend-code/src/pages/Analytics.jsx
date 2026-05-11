@@ -86,9 +86,9 @@ const Analytics = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
         {loading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="bg-surface border border-border px-3 py-2.5 animate-pulse">
-              <div className="h-3 w-16 bg-surface-3 border border-border mb-2" />
-              <div className="h-6 w-12 bg-surface-3 border border-border" />
+            <div key={i} className="card px-3 py-2.5 animate-pulse">
+              <div className="h-3 w-16 bg-surface-3 border border-border rounded-md mb-2" />
+              <div className="h-6 w-12 bg-surface-3 border border-border rounded-md" />
             </div>
           ))
         ) : (
@@ -102,7 +102,7 @@ const Analytics = () => {
               d: `${td.battleTested ?? 0} of ${td.totalAssets ?? 0} assets`,
             },
           ].map((row) => (
-            <div key={row.k} className="bg-surface border border-border px-3 py-2.5">
+            <div key={row.k} className="card card-hover px-3 py-2.5">
               <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted">
                 {row.k}
               </div>
@@ -116,7 +116,7 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
-        <div className="bg-surface border border-border p-4">
+        <div className="card card-hover p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-[12px] font-semibold text-text-primary flex items-center gap-1.5">
               <LineChart className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.5} />
@@ -124,7 +124,7 @@ const Analytics = () => {
             </div>
           </div>
           {loading ? (
-            <div className="h-24 bg-surface-3 border border-border animate-pulse mt-4" />
+            <div className="h-24 bg-surface-3 border border-border rounded-lg animate-pulse mt-4" />
           ) : (
             <div className="flex items-end gap-1.5 mt-4 pt-1 border-t border-border">
               {(td.monthlyTrend || []).map((x) => {
@@ -135,7 +135,7 @@ const Analytics = () => {
                       {x.count ?? 0}
                     </span>
                     <div
-                      className={`w-full ${BAR} opacity-90`}
+                      className={`w-full ${BAR} opacity-90 rounded-t-sm`}
                       style={{ height: `${h}px` }}
                       title={`${x.month}: ${x.count ?? 0}`}
                     />
@@ -147,7 +147,7 @@ const Analytics = () => {
           )}
         </div>
 
-        <div className="bg-surface border border-border p-4">
+        <div className="card card-hover p-4">
           <div className="text-[12px] font-semibold text-text-primary flex items-center gap-1.5 mb-3">
             <PieChart className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.5} />
             Assets by family
@@ -155,7 +155,7 @@ const Analytics = () => {
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-6 bg-surface-3 border border-border animate-pulse" />
+                <div key={i} className="h-6 bg-surface-3 border border-border rounded-md animate-pulse" />
               ))}
             </div>
           ) : familyPie.length === 0 ? (
@@ -168,9 +168,9 @@ const Analytics = () => {
                     <span className="font-medium text-text-primary">{row.label}</span>
                     <span className="text-text-muted tabular-nums">{row.pct}%</span>
                   </div>
-                  <div className="h-1.5 bg-surface-3 border border-border overflow-hidden">
+                  <div className="h-1.5 bg-surface-3 border border-border overflow-hidden rounded-full">
                     <div
-                      className={`h-full ${BAR} opacity-85`}
+                      className={`h-full ${BAR} opacity-85 rounded-full`}
                       style={{ width: `${row.pct}%` }}
                     />
                   </div>
@@ -182,12 +182,12 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <div className="bg-surface border border-border p-4">
+        <div className="card card-hover p-4">
           <div className="text-[12px] font-semibold text-text-primary flex items-center gap-1.5 mb-3">
             <TrendingUp className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.5} />
             Top accelerators (by deploys)
           </div>
-          <div className="border border-border overflow-hidden text-[11px]">
+          <div className="border border-border overflow-hidden text-[11px] rounded-lg">
             <div className="grid grid-cols-[28px_1fr_56px] gap-2 px-2 py-1.5 bg-surface-3 border-b border-border font-semibold text-text-muted uppercase tracking-wide">
               <span>#</span>
               <span>Name</span>
@@ -216,12 +216,12 @@ const Analytics = () => {
           </div>
         </div>
 
-        <div className="bg-surface border border-border p-4">
+        <div className="card card-hover p-4">
           <div className="text-[12px] font-semibold text-text-primary flex items-center gap-1.5 mb-3">
             <Users className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.5} />
             Top contributors (submissions)
           </div>
-          <ul className="divide-y divide-border border border-border overflow-hidden">
+          <ul className="divide-y divide-border border border-border overflow-hidden rounded-lg">
             {loading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <li key={i} className="h-14 bg-surface-3/50 animate-pulse" />
@@ -233,7 +233,7 @@ const Analytics = () => {
                 const name = c._id || c.name || 'Unknown';
                 return (
                   <li key={name} className="flex items-center gap-3 px-3 py-2">
-                    <div className="w-7 h-7 border border-border bg-surface-3 flex items-center justify-center text-[10px] font-semibold text-text-secondary flex-shrink-0">
+                    <div className="w-7 h-7 border border-border bg-surface-3 rounded-lg flex items-center justify-center text-[10px] font-semibold text-text-secondary flex-shrink-0">
                       {contributorInitials(name)}
                     </div>
                     <div className="min-w-0 flex-1">

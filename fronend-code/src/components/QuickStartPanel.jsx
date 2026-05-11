@@ -23,7 +23,7 @@ const QuickStartPanel = ({ text, className = '' }) => {
 
   return (
     <section
-      className={`rounded-xl border border-border bg-surface shadow-card overflow-hidden ${className}`.trim()}
+      className={`rounded-xl border border-border bg-surface shadow-card card-hover overflow-hidden ${className}`.trim()}
     >
       <h2 className="flex items-center gap-1 px-4 py-3.5 border-b border-border bg-surface-muted/40 text-[11px] font-bold uppercase tracking-[0.14em] text-brand-800">
         <ChevronRight className="w-4 h-4 text-brand-700 -mr-0.5" strokeWidth={2.5} />

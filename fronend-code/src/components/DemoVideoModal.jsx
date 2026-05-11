@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X } from 'lucide-react';
+import { X, VideoOff } from 'lucide-react';
+import VideoPlayer from './media/VideoPlayer';
 
 /**
- * Full-viewport overlay with blurred backdrop; centered HTML5 video with native controls.
+ * In-app demo viewer: blurred backdrop, enterprise chrome, reusable VideoPlayer or empty/error copy.
  */
-const DemoVideoModal = ({ open, title, src, onClose }) => {
-  const videoRef = useRef(null);
+const DemoVideoModal = ({ open, title, src, onClose, emptyMessage }) => {
   const closeRef = useRef(null);
 
   useEffect(() => {
@@ -20,11 +20,6 @@ const DemoVideoModal = ({ open, title, src, onClose }) => {
   }, [open]);
 
   useEffect(() => {
-    if (!open || !videoRef.current) return;
-    videoRef.current.play().catch(() => {});
-  }, [open, src]);
-
-  useEffect(() => {
     if (!open) return undefined;
     const onKey = (e) => {
       if (e.key === 'Escape') onClose?.();
@@ -33,7 +28,7 @@ const DemoVideoModal = ({ open, title, src, onClose }) => {
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  if (!open || !src) return null;
+  if (!open) return null;
 
   return createPortal(
     <div
@@ -48,7 +43,7 @@ const DemoVideoModal = ({ open, title, src, onClose }) => {
         className="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity duration-200"
         onClick={onClose}
       />
-      <div className="relative z-10 w-full max-w-4xl max-h-[85vh] flex flex-col rounded-xl border border-white/20 bg-surface shadow-2xl shadow-black/40 ring-1 ring-black/5 overflow-hidden transition-all duration-200 ease-out">
+      <div className="relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl border border-border bg-surface shadow-2xl shadow-black/40 ring-1 ring-black/5 overflow-hidden transition-all duration-200 ease-out">
         <div className="flex items-center justify-between gap-3 px-3 py-2 border-b border-border bg-surface-muted/80">
           <h2 className="text-sm font-semibold text-text-primary truncate min-w-0 pr-2">{title || 'Demo'}</h2>
           <button
@@ -61,18 +56,20 @@ const DemoVideoModal = ({ open, title, src, onClose }) => {
             <X className="w-4 h-4" strokeWidth={2} />
           </button>
         </div>
-        <div className="bg-black flex items-center justify-center min-h-[200px] max-h-[calc(85vh-52px)]">
-          <video
-            ref={videoRef}
-            key={src}
-            className="w-full max-h-[calc(85vh-52px)] object-contain"
-            controls
-            controlsList="nodownload"
-            playsInline
-            preload="metadata"
-            src={src}
-          />
-        </div>
+
+        {!src ? (
+          <div className="flex flex-col items-center justify-center min-h-[220px] px-6 py-12 bg-surface-3">
+            <VideoOff className="w-10 h-10 text-text-muted mb-3" strokeWidth={1.25} />
+            <p className="text-[13px] text-text-secondary text-center max-w-md leading-relaxed">
+              {emptyMessage ||
+                'No demo video is linked for this asset yet. Check back after a file is uploaded or a URL is published.'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-y-auto max-h-[calc(90vh-52px)]">
+            <VideoPlayer src={src} autoPlay />
+          </div>
+        )}
       </div>
     </div>,
     document.body,

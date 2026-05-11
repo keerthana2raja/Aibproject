@@ -7,6 +7,12 @@ export function normalizeSubmissionDetail(raw) {
   if (!next.demoVideoUrl && (next.demo_video_relpath || next.demo_video_url)) {
     next.demoVideoUrl = next.demo_video_relpath || next.demo_video_url;
   }
+  if (!next.demoVideoUrl && next.videoUrl) {
+    next.demoVideoUrl = next.videoUrl;
+  }
+  if (!next.demoVideoUrl && next.video_url) {
+    next.demoVideoUrl = next.video_url;
+  }
   if (!next.submissionAttachments?.length && Array.isArray(next.submission_attachments)) {
     next.submissionAttachments = next.submission_attachments;
   }

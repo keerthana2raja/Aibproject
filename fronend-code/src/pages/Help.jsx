@@ -60,11 +60,13 @@ const Tile = ({ iconKey, title, subtitle, action, onSwagger }) => {
       type="button"
       onClick={isClickable ? handleClick : undefined}
       disabled={!isClickable}
-      className={`bg-surface border border-border p-3 text-left transition-colors focus-ring ${
-        isClickable ? 'hover:border-border-mid cursor-pointer' : 'opacity-95 cursor-default'
+      className={`card p-3 text-left transition-colors focus-ring ${
+        isClickable
+          ? 'card-hover hover:border-border-mid cursor-pointer'
+          : 'opacity-95 cursor-default'
       }`}
     >
-      <div className="w-8 h-8 border border-border bg-surface-3 flex items-center justify-center mb-2">
+      <div className="w-8 h-8 border border-border bg-surface-3 rounded-lg flex items-center justify-center mb-2">
         <Icon className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
       </div>
       <div className="text-[12px] font-semibold text-text-primary">{title}</div>
@@ -163,7 +165,7 @@ const Help = () => {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search catalog (assets & families from server)…"
-          className="w-full pl-8 pr-8 py-2 border border-border bg-surface text-[12px] outline-none focus:border-border-mid focus:ring-1 focus:ring-border-mid"
+          className="w-full pl-8 pr-8 py-2 rounded-lg border border-border bg-surface text-[12px] outline-none focus:border-border-mid focus:ring-1 focus:ring-border-mid shadow-inner"
         />
         {searching && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -173,7 +175,7 @@ const Help = () => {
       </div>
 
       {q.trim() && !searching && results && (
-        <div className="border border-border bg-surface p-3 text-[11px] max-w-lg">
+        <div className="card card-hover p-3 text-[11px] max-w-lg">
           {results._error ? (
             <span className="text-text-muted">Search unavailable. Ensure the API is running.</span>
           ) : hasHits ? (
@@ -231,7 +233,7 @@ const Help = () => {
         ))}
       </div>
 
-      <div className="bg-surface border border-border p-4">
+      <div className="card card-hover p-4">
         <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2">
           Frequently asked
         </div>
@@ -240,7 +242,7 @@ const Help = () => {
         ))}
       </div>
 
-      <div className="bg-surface border border-border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="card card-hover p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="text-[12px] font-semibold text-text-primary">{contact.title}</div>
           {contact.description ? (
@@ -258,7 +260,7 @@ const Help = () => {
                 className={
                   primary
                     ? 'inline-flex items-center gap-1.5 px-3 py-1.5 btn-primary'
-                    : 'inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface text-[12px] font-semibold text-text-secondary hover:bg-surface-3 focus-ring'
+                    : 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface text-[12px] font-semibold text-text-secondary shadow-sm hover:bg-surface-3 focus-ring'
                 }
               >
                 <BtnIcon className="w-3.5 h-3.5" strokeWidth={1.5} />

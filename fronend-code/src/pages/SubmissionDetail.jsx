@@ -21,6 +21,7 @@ import AttachedDocumentsPanel from '../components/AttachedDocumentsPanel';
 import { useToast } from '../context/ToastContext';
 import { PIPELINE_STATUS_META } from '../theme/enterpriseMeta';
 import { resolveMediaSrc } from '../utils/mediaSrc';
+import { pickDemoVideoRelPathOrTestFallback } from '../utils/demoVideoUrl';
 import { normalizeSubmissionDetail } from '../utils/submissionApiNormalize';
 
 const StatusBadge = ({ status }) => {
@@ -95,7 +96,10 @@ const SubmissionDetail = () => {
     );
 
   const canAct = submission.status === 'governance';
-  const demoSrc = submission.demoVideoUrl ? resolveMediaSrc(submission.demoVideoUrl) : '';
+  const demoSrc = (() => {
+    const raw = pickDemoVideoRelPathOrTestFallback(submission);
+    return raw ? resolveMediaSrc(raw) : '';
+  })();
   const attachments = submission.submissionAttachments || [];
   const quickStartText = String(submission.quickStart || '').trim();
 
