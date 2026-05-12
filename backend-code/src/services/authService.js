@@ -21,16 +21,18 @@ const loginUser = async (email, password) => {
   let userPayload;
   if (isSqliteMode()) {
     const row = await sqlite.userByEmailSqlite(email.trim());
+    if (!row) {
+      throw { statusCode: 403, message: "Access denied. You are not registered as an authorized user." };
+    }
     userPayload = {
       id: email.toLowerCase(),
       email: email.toLowerCase(),
-      name:
-        row?.name ||
+      name: row.name ||
         email
           .split("@")[0]
           .replace(/\./g, " ")
           .replace(/\b\w/g, (c) => c.toUpperCase()),
-      role: row?.role || "member",
+      role: row.role || "member",
     };
   } else {
     userPayload = {
