@@ -203,9 +203,18 @@ exports.assetsListSqlite = async (filters = {}) => {
     });
   }
   if (filters.q) {
-    where.push("(LOWER(name) LIKE ? OR LOWER(desc) LIKE ? OR LOWER(id) LIKE ?)");
+    where.push(
+      "(LOWER(name) LIKE ? OR LOWER(desc) LIKE ? OR LOWER(id) LIKE ?" +
+      " OR LOWER(COALESCE(family,'')) LIKE ?" +
+      " OR LOWER(COALESCE(tags,'')) LIKE ?" +
+      " OR LOWER(COALESCE(solution,'')) LIKE ?" +
+      " OR LOWER(COALESCE(owner,'')) LIKE ?" +
+      " OR LOWER(COALESCE(clouds,'')) LIKE ?" +
+      " OR LOWER(COALESCE(maturity,'')) LIKE ?" +
+      " OR LOWER(COALESCE(effort,'')) LIKE ?)"
+    );
     const like = `%${String(filters.q).toLowerCase()}%`;
-    args.push(like, like, like);
+    args.push(like, like, like, like, like, like, like, like, like, like);
   }
   const sql = `SELECT * FROM assets ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY id`;
   const res = await db.execute({ sql, args });
