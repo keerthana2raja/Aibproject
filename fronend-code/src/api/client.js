@@ -27,10 +27,17 @@ client.interceptors.response.use(
   (response) => response,
   (error) => {
     const isLoginRequest = error.config?.url?.includes('/auth/login');
+    const path =
+      typeof window !== 'undefined' ? window.location.pathname.replace(/\/+$/, '') || '/' : '';
+    const onLoginRoute = path === '/login';
     if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('aimplify_token');
       localStorage.removeItem('aimplify_user');
-      window.location.href = '/login';
+      // Avoid full reload while already on login — prevents flicker / reload loops when
+      // public calls (e.g. platform counts) return 401 or React StrictMode runs effects twice.
+      if (!onLoginRoute) {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }
