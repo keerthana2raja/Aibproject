@@ -1,15 +1,8 @@
 /**
- * Database config — uses Turso (@libsql/client) in production, local SQLite file in dev.
- * Turso env vars: TURSO_DATABASE_URL + TURSO_AUTH_TOKEN
- * Local fallback: file:data/aimplify.sqlite (or /tmp on Vercel)
+ * Database config — Turso (@libsql/client) only.
+ * Required env vars: TURSO_DATABASE_URL + TURSO_AUTH_TOKEN
  */
-const path = require("path");
 const { createClient } = require("@libsql/client");
-
-const LOCAL_PATH = process.env.SQLITE_PATH ||
-  (process.env.VERCEL
-    ? "file:/tmp/aimplify.sqlite"
-    : `file:${path.join(process.cwd(), "data", "aimplify.sqlite")}`);
 
 const ASSET_FAMILY_PREFIX = { atlas:"ATL", forge:"FRG", relay:"RLY", sentinel:"SEN", nexus:"NXS" };
 
@@ -18,9 +11,14 @@ let _initialized = false;
 
 function getDb() {
   if (!_client) {
-    _client = (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN)
-      ? createClient({ url: process.env.TURSO_DATABASE_URL, authToken: process.env.TURSO_AUTH_TOKEN, intMode: "number" })
-      : createClient({ url: LOCAL_PATH, intMode: "number" });
+    if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
+      throw new Error("❌ TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be set.");
+    }
+    _client = createClient({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN.trim(),
+      intMode: "number",
+    });
   }
   return _client;
 }
@@ -119,8 +117,9 @@ async function initSqlite() {
   await runSchema(db);
   await migrateCatalogMasterSchema(db);
   await migrateExtras(db);
-  const { applyCanonicalDemoUpserts } = require("../data/sqliteSeedDemo");
-  await applyCanonicalDemoUpserts(db);
+  // Demo seed disabled — real data is loaded via seed.js
+  // const { applyCanonicalDemoUpserts } = require("../data/sqliteSeedDemo");
+  // await applyCanonicalDemoUpserts(db);
   await backfillMasterIds(db);
   try { await require("../services/sqliteService").recomputeAllFamilyStatsSqlite(); } catch(e) { console.warn("Stats reconcile skipped:", e.message); }
   await seedUsersIfEmpty(db);
@@ -134,4 +133,4 @@ function isSqliteMode() {
   return raw !== "mongodb" && raw !== "mongo";
 }
 
-module.exports = { initSqlite, getDb, isSqliteMode, SQLITE_PATH_ENV: LOCAL_PATH, ASSET_FAMILY_PREFIX, migrateCatalogMasterSchema };
+module.exports = { initSqlite, getDb, isSqliteMode, ASSET_FAMILY_PREFIX, migrateCatalogMasterSchema };

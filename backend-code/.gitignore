@@ -2,3 +2,10 @@ node_modules/
 data/*.sqlite
 data/*.sqlite-*
 .firebase/
+
+# Large video/media files — stored in Vercel Blob, not in repo
+Videos and Screenshots/
+*.mp4
+*.mov
+*.webm
+.env
