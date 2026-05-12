@@ -16,7 +16,11 @@
 
 const express = require("express");
 const router = express.Router();
-const { getAllCounts, getAllKeys, getFamilyCount } = require("../controllers/platformController");
+const {
+  getAllCounts,
+  getAllKeys,
+  getFamilyCount,
+} = require("../controllers/platformController");
 const { protect } = require("../middleware/authMiddleware");
 
 // Shared CDN cache header (matches policy in familyRoutes / dashboardRoutes)
@@ -26,7 +30,7 @@ const setCacheHeaders = (_req, res, next) => {
 };
 
 // GET /v1/platform/counts
-router.get("/counts", protect, setCacheHeaders, getAllCounts);
+router.get("/counts", setCacheHeaders, getAllCounts);
 
 // GET /v1/platform/keys
 router.get("/keys", protect, setCacheHeaders, getAllKeys);
