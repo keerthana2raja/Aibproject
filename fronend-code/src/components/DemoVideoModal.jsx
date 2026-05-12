@@ -32,7 +32,7 @@ const DemoVideoModal = ({ open, title, src, onClose, emptyMessage }) => {
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4 sm:p-8"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-8"
       role="dialog"
       aria-modal="true"
       aria-label={title ? `Demo video: ${title}` : 'Demo video'}
@@ -40,7 +40,7 @@ const DemoVideoModal = ({ open, title, src, onClose, emptyMessage }) => {
       <button
         type="button"
         aria-label="Close video"
-        className="absolute inset-0 bg-slate-900/40 backdrop-blur-md transition-opacity duration-200"
+        className="absolute inset-0 bg-slate-900/70 backdrop-blur-xl transition-opacity duration-200"
         onClick={onClose}
       />
       <div className="relative z-10 w-full max-w-4xl max-h-[90vh] flex flex-col rounded-xl border border-border bg-surface shadow-2xl shadow-black/40 ring-1 ring-black/5 overflow-hidden transition-all duration-200 ease-out">
