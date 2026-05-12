@@ -694,7 +694,7 @@ exports.tryPromoteApprovedRegistrationSqlite = async (registrationId, updatedByN
 exports.userByEmailSqlite = async (email) => {
   const db = getDb();
   const res = await db.execute({
-    sql: "SELECT email, name, role FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1",
+    sql: "SELECT email, name, role, password FROM users WHERE LOWER(email) = LOWER(?) LIMIT 1",
     args: [String(email || "").trim()],
   });
   return res.rows[0] || null;

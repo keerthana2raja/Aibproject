@@ -68,7 +68,7 @@ const SectionLabel = ({ label, collapsed }) =>
     </div>
   );
 
-const Sidebar = ({ onClose, pendingCount = 0 }) => {
+const Sidebar = ({ onClose }) => {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('sidebar_c') === 'true');
 
@@ -84,9 +84,6 @@ const Sidebar = ({ onClose, pendingCount = 0 }) => {
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-
-  const pipelineBadge =
-    pendingCount > 0 ? (pendingCount > 99 ? '99+' : String(pendingCount)) : null;
 
   return (
     <aside
@@ -152,7 +149,6 @@ const Sidebar = ({ onClose, pendingCount = 0 }) => {
           to="/pipeline"
           icon={GitPullRequest}
           label="Pipeline"
-          badge={pipelineBadge}
           onClick={onClose}
           collapsed={collapsed}
         />
@@ -160,7 +156,7 @@ const Sidebar = ({ onClose, pendingCount = 0 }) => {
 
         <SectionLabel label="System" collapsed={collapsed} />
         {/* <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} collapsed={collapsed} /> */}
-        <NavItem to="/help" icon={LifeBuoy} label="Help" onClick={onClose} collapsed={collapsed} />
+        <NavItem to="/help" icon={LifeBuoy} label="Help (Coming Soon)" onClick={onClose} collapsed={collapsed} />
       </nav>
     </aside>
   );

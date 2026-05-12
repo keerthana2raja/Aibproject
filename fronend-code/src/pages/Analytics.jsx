@@ -3,6 +3,7 @@ import { LineChart, PieChart, Users, TrendingUp } from 'lucide-react';
 import { getAnalyticsSummary } from '../api/analytics';
 import { getFamilies } from '../api/families';
 import ErrorState from '../components/ui/ErrorState';
+import { Tooltip } from '../components/Tooltip';
 
 const BAR = 'bg-brand/70';
 
@@ -116,7 +117,7 @@ const Analytics = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-3">
-        <div className="card card-hover p-4">
+        <div className="card card-hover relative z-[1] !overflow-visible p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="text-[12px] font-semibold text-text-primary flex items-center gap-1.5">
               <LineChart className="w-3.5 h-3.5 text-text-muted" strokeWidth={1.5} />
@@ -126,21 +127,32 @@ const Analytics = () => {
           {loading ? (
             <div className="h-24 bg-surface-3 border border-border rounded-lg animate-pulse mt-4" />
           ) : (
-            <div className="flex items-end gap-1.5 mt-4 pt-1 border-t border-border">
+            <div className="flex items-end gap-1.5 mt-4 pt-1 border-t border-border overflow-visible">
               {(td.monthlyTrend || []).map((x) => {
+                const c = Number(x.count) || 0;
                 const h = Math.max(8, Math.round(((x.count || 0) / trendMax) * 64));
+                const sub = `${c} ${c === 1 ? 'submission' : 'submissions'}`;
                 return (
-                  <div key={x.month} className="flex flex-col items-center gap-1 flex-1">
-                    <span className="text-[10px] font-medium text-text-secondary tabular-nums">
-                      {x.count ?? 0}
-                    </span>
-                    <div
-                      className={`w-full ${BAR} opacity-90 rounded-t-sm`}
-                      style={{ height: `${h}px` }}
-                      title={`${x.month}: ${x.count ?? 0}`}
-                    />
-                    <span className="text-[10px] text-text-muted font-medium">{x.month}</span>
-                  </div>
+                  <Tooltip
+                    key={x.month}
+                    title={String(x.month)}
+                    subtitle={sub}
+                    placement="top"
+                    align="center"
+                    className="min-w-0 flex-1 flex-col"
+                  >
+                    <div className="flex w-full cursor-default flex-col items-center gap-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35 focus-visible:ring-offset-1">
+                      <span className="text-[10px] font-medium text-text-secondary tabular-nums">
+                        {x.count ?? 0}
+                      </span>
+                      <div
+                        className={`w-full ${BAR} opacity-90 rounded-t-md ring-1 ring-inset ring-black/[0.04]`}
+                        style={{ height: `${h}px` }}
+                        aria-hidden
+                      />
+                      <span className="text-[10px] font-medium text-text-muted">{x.month}</span>
+                    </div>
+                  </Tooltip>
                 );
               })}
             </div>

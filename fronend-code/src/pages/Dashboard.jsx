@@ -16,32 +16,77 @@ import {
 import { useSearch } from '../context/SearchContext';
 import { getDashboardStats, getPopularAssets, getDashboardActivity } from '../api/dashboard';
 import ErrorState from '../components/ui/ErrorState';
+import PageLoader from '../components/ui/PageLoader';
 import CountUp from '../components/ui/CountUp';
 import { Tooltip } from '../components/Tooltip';
 import { FAMILY_TILE_THEME } from '../theme/enterpriseMeta';
 
 const FALLBACK_FAMILY_TILE_THEME = FAMILY_TILE_THEME.nexus;
 
-const KPI = ({ icon: Icon, value, label, hint, countDelay = 0, loading }) => (
-  <div className="flex-1 min-w-[140px] flex gap-4 p-4 sm:p-5">
-    <span className="icon-wrap !w-11 !h-11 !rounded-xl border-brand-100 bg-brand-50 text-brand-600 shadow-inner">
-      <Icon className="w-5 h-5" strokeWidth={1.75} />
-    </span>
-    <div>
-      {loading ? (
-        <div className="h-8 w-16 bg-surface-muted border border-border rounded animate-pulse" />
-      ) : (
-        <div className="text-2xl sm:text-[26px] font-bold text-text-primary tracking-tight tabular-nums leading-none">
-          <CountUp end={value} duration={1000} delay={countDelay} />
-        </div>
-      )}
-      <div className="text-[11px] font-medium text-text-muted mt-2 uppercase tracking-wide">{label}</div>
-      {hint && !loading ? (
-        <div className="text-[11px] text-brand-600/90 mt-1 font-medium">{hint}</div>
-      ) : null}
+const KPI = ({
+  icon: Icon,
+  value,
+  label,
+  hint,
+  tooltipSubtitle,
+  tooltipPlacement = 'bottom',
+  tooltipAlign = 'center',
+  countDelay = 0,
+  loading,
+}) => {
+  const metrics = (
+    <>
+      <span className="icon-wrap !w-11 !h-11 !rounded-xl border-brand-100 bg-brand-50 text-brand-600 shadow-inner shrink-0">
+        <Icon className="w-5 h-5" strokeWidth={1.75} />
+      </span>
+      <div className="min-w-0 flex-1">
+        {loading ? (
+          <div className="h-8 w-16 bg-surface-muted border border-border rounded animate-pulse" />
+        ) : (
+          <div className="text-2xl sm:text-[26px] font-bold text-text-primary tracking-tight tabular-nums leading-none">
+            <CountUp end={value} duration={1000} delay={countDelay} />
+          </div>
+        )}
+        <div className="text-[11px] font-medium text-text-muted mt-2 uppercase tracking-wide">{label}</div>
+        {hint && !loading ? (
+          <div className="text-[11px] text-brand-600/90 mt-1 font-medium">{hint}</div>
+        ) : null}
+      </div>
+    </>
+  );
+
+  const padRow = 'flex min-h-[88px] flex-row gap-4 p-4 sm:p-5';
+
+  const cell = (
+    <div className={`${padRow} w-full flex-1 min-w-[140px]`}>
+      {metrics}
     </div>
-  </div>
-);
+  );
+
+  if (loading || !tooltipSubtitle) {
+    return (
+      <div className="flex min-h-[88px] min-w-[140px] flex-1">
+        {cell}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex min-h-[88px] min-w-[140px] flex-1">
+      <Tooltip
+        title={label}
+        subtitle={tooltipSubtitle}
+        placement={tooltipPlacement}
+        align={tooltipAlign}
+        className="relative w-max max-w-full"
+      >
+        <div className="flex w-max max-w-full cursor-default rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-brand-500/35 focus-visible:ring-offset-2">
+          <div className={padRow}>{metrics}</div>
+        </div>
+      </Tooltip>
+    </div>
+  );
+};
 
 const NoticeRow = ({ children }) => (
   <div className="flex gap-2 rounded-md border border-border bg-surface-muted/40 pl-2 pr-2 py-1.5 border-l-2 border-l-border-strong">
@@ -84,6 +129,7 @@ const PlatformFamilyTiles = ({ families = [], onOpen, skeleton }) => {
             onClick={() => onOpen(f.key)}
           >
             <Tooltip
+              placement="top"
               title={f.name}
               subtitle={`${assetCount} assets · ${deploys} deploys`}
               className="flex size-full min-w-0 flex-1 flex-col"
@@ -143,9 +189,11 @@ const Dashboard = () => {
         getPopularAssets(6),
         getDashboardActivity(12),
       ]);
-      setStats(statsRes.data.data);
-      setPopular(popularRes.data.data);
-      setActivity(activityRes.data.data);
+      const rawPopular = popularRes?.data?.data;
+      const rawActivity = activityRes?.data?.data;
+      setStats(statsRes?.data?.data ?? {});
+      setPopular(Array.isArray(rawPopular) ? rawPopular : []);
+      setActivity(Array.isArray(rawActivity) ? rawActivity : []);
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to load dashboard data.');
     } finally {
@@ -154,9 +202,8 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (location.pathname !== '/dashboard') return;
-    load();
-  }, [location.pathname, location.key, load]);
+    void load();
+  }, [load, location.key]);
 
   useEffect(() => {
     const onRefresh = () => load();
@@ -234,14 +281,24 @@ const Dashboard = () => {
     );
   }
 
+  if (loading && stats === null) {
+    return (
+      <div className="flex-1 flex flex-col min-h-0">
+        <PageLoader message="Loading dashboard…" />
+      </div>
+    );
+  }
+
   return (
     <div className="page-wrap max-w-none">
-      <div className="card divide-y md:divide-y-0 md:divide-x divide-border flex flex-col md:flex-row card-hover">
+      <div className="card divide-y md:divide-y-0 md:divide-x divide-border flex flex-col md:flex-row card-hover relative z-10 !overflow-visible">
         <KPI
           icon={Layers}
           value={filteredStats?.totalAssets ?? 0}
           label="Total assets"
+          tooltipAlign="start"
           hint={familyHint}
+          tooltipSubtitle={`Count of accelerators currently in catalog scope. ${familyHint ? `${familyHint} — open Catalog to browse by family.` : 'Open Catalog to browse by family.'}`}
           countDelay={0}
           loading={loading}
         />
@@ -249,6 +306,7 @@ const Dashboard = () => {
           icon={Award}
           value={filteredStats?.battleTested ?? 0}
           label="Battle-tested"
+          tooltipSubtitle="Accelerators flagged as battle-tested maturity—validated patterns suitable for broad production reuse across teams."
           countDelay={70}
           loading={loading}
         />
@@ -256,6 +314,7 @@ const Dashboard = () => {
           icon={MonitorPlay}
           value={filteredStats?.demoReady ?? 0}
           label="Demo-ready"
+          tooltipSubtitle="Accelerators with a playable demo reviewers and catalog viewers can launch from Asset Detail or Submission Review."
           countDelay={140}
           loading={loading}
         />
@@ -263,7 +322,13 @@ const Dashboard = () => {
           icon={TrendingUp}
           value={filteredStats?.totalDeploys ?? 0}
           label="Total deploys"
+          tooltipAlign="end"
           hint={deployHint}
+          tooltipSubtitle={
+            stats?.deployMomPercent != null
+              ? `Aggregate deployment telemetry summed across promoted accelerators and linked pipeline activity. Compared to prior month: +${stats.deployMomPercent}% (see hint below metric).`
+              : 'Aggregate deployment telemetry summed across promoted accelerators and linked pipeline activity.'
+          }
           countDelay={210}
           loading={loading}
         />

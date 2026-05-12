@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Paperclip, FileText, Download } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { suggestedFilenameFromUrl, triggerDownloadFromUrl } from '../utils/downloadFromUrl';
 
 export function formatAttachmentBytes(bytes) {
   if (bytes == null || typeof bytes !== 'number' || !Number.isFinite(bytes)) return '—';
@@ -14,11 +16,43 @@ export function formatAttachmentBytes(bytes) {
   return `${shown} ${units[u]}`;
 }
 
+function safeFilenameFromLabel(name, href) {
+  const n = typeof name === 'string' ? name.trim() : '';
+  if (
+    n &&
+    !n.includes('..') &&
+    !/[\\/]/u.test(n) &&
+    n.length < 240
+  ) {
+    return n;
+  }
+  return suggestedFilenameFromUrl(href, 'attachment');
+}
+
 /**
  * attachments: `{ name?, relpath?, bytes?, mimetype? }[]` or legacy strings
+ * @param {{ showGetButton?: boolean }} — set false where downloads are duplicated (e.g. Submission Review architecture).
  */
-const AttachedDocumentsPanel = ({ attachments, resolveHref, className = '' }) => {
+const AttachedDocumentsPanel = ({ attachments, resolveHref, className = '', showGetButton = true }) => {
+  const toast = useToast();
+  const [busyIdx, setBusyIdx] = useState(null);
+
   if (!attachments?.length) return null;
+
+  const handleGet = async (e, idx, href, label) => {
+    e.preventDefault();
+    const key = String(idx);
+    setBusyIdx(key);
+    try {
+      await triggerDownloadFromUrl(href, safeFilenameFromLabel(label, href));
+      toast.success('Download started');
+    } catch {
+      toast.error('Opening file in a new tab — save from the browser if needed.');
+      window.open(href, '_blank', 'noopener,noreferrer');
+    } finally {
+      setBusyIdx(null);
+    }
+  };
 
   return (
     <section
@@ -34,6 +68,8 @@ const AttachedDocumentsPanel = ({ attachments, resolveHref, className = '' }) =>
           const relpath = typeof file === 'object' && file?.relpath ? file.relpath : null;
           const bytes = typeof file === 'object' && file?.bytes != null ? file.bytes : null;
           const href = relpath && resolveHref ? resolveHref(relpath) : null;
+          const loading = busyIdx === String(idx);
+
           return (
             <li
               key={`${name}-${idx}`}
@@ -46,26 +82,27 @@ const AttachedDocumentsPanel = ({ attachments, resolveHref, className = '' }) =>
                   {formatAttachmentBytes(bytes)}
                 </span>
               </div>
-              {href ? (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  download
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-200 bg-brand-50/80 text-[12px] font-semibold text-brand-800 hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 transition-colors"
-                >
-                  <Download className="w-3.5 h-3.5" strokeWidth={2} />
-                  Get
-                </a>
-              ) : (
-                <span
-                  className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-muted text-[12px] font-semibold text-text-muted cursor-not-allowed opacity-70"
-                  title="No file path available for download"
-                >
-                  <Download className="w-3.5 h-3.5" strokeWidth={2} />
-                  Get
-                </span>
-              )}
+              {showGetButton ? (
+                href ? (
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={(e) => handleGet(e, idx, href, name)}
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-brand-200 bg-brand-50/80 text-[12px] font-semibold text-brand-800 hover:bg-brand-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500/40 transition-colors disabled:opacity-65"
+                  >
+                    <Download className="w-3.5 h-3.5" strokeWidth={2} />
+                    {loading ? '…' : 'Get'}
+                  </button>
+                ) : (
+                  <span
+                    className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface-muted text-[12px] font-semibold text-text-muted cursor-not-allowed opacity-70"
+                    title="No file path available for download"
+                  >
+                    <Download className="w-3.5 h-3.5" strokeWidth={2} />
+                    Get
+                  </span>
+                )
+              ) : null}
             </li>
           );
         })}

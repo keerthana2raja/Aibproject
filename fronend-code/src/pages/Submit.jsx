@@ -26,8 +26,10 @@ import Spinner from '../components/ui/Spinner';
 import PageLoader from '../components/ui/PageLoader';
 import ErrorState from '../components/ui/ErrorState';
 import { resolveMediaSrc } from '../utils/mediaSrc';
+import { getApiErrorMessage } from '../utils/apiErrorMessage';
 import {
   validateArchitectureDiagramFile,
+  validateAllSubmissionUploads,
   validateAttachmentFiles,
   validateDemoVideoFile,
 } from '../utils/submissionUploadValidation';
@@ -240,6 +242,8 @@ const Submit = () => {
   const [supportingFiles, setSupportingFiles] = useState([]);
   const [architectureDiagramFile, setArchitectureDiagramFile] = useState(null);
   const [uploadErrors, setUploadErrors] = useState({ demo: '', architecture: '', supporting: '' });
+  /** Populated when final submit finishes with one or more upload API failures */
+  const [submissionUploadFailures, setSubmissionUploadFailures] = useState([]);
 
   const [form, setForm] = useState({
     name: '',
@@ -268,17 +272,19 @@ const Submit = () => {
     if (!form.name.trim()) errs.name = 'Accelerator name is required.';
     if (!form.description.trim()) errs.description = 'Short description is required.';
 
-    const demoErr = validateDemoVideoFile(demoVideoFile);
-    const archErr = validateArchitectureDiagramFile(architectureDiagramFile);
-    const attErr = validateAttachmentFiles(supportingFiles);
+    const { demo, arch, att, messages } = validateAllSubmissionUploads(
+      demoVideoFile,
+      architectureDiagramFile,
+      supportingFiles,
+    );
     setUploadErrors({
-      demo: demoErr.ok ? '' : demoErr.message,
-      architecture: archErr.ok ? '' : archErr.message,
-      supporting: attErr.ok ? '' : attErr.message,
+      demo: demo.ok ? '' : demo.message,
+      architecture: arch.ok ? '' : arch.message,
+      supporting: att.ok ? '' : att.message,
     });
-    if (!demoErr.ok) errs.uploadFiles = demoErr.message;
-    else if (!archErr.ok) errs.uploadFiles = archErr.message;
-    else if (!attErr.ok) errs.uploadFiles = attErr.message;
+    if (messages.length) {
+      errs.uploadFiles = messages.join(' · ');
+    }
 
     return errs;
   };
@@ -373,24 +379,20 @@ const Submit = () => {
       return;
     }
 
-    const demoErr = validateDemoVideoFile(demoVideoFile);
-    const archErr = validateArchitectureDiagramFile(architectureDiagramFile);
-    const attErr = validateAttachmentFiles(supportingFiles);
+    const uploadCheck = validateAllSubmissionUploads(
+      demoVideoFile,
+      architectureDiagramFile,
+      supportingFiles,
+    );
     setUploadErrors({
-      demo: demoErr.ok ? '' : demoErr.message,
-      architecture: archErr.ok ? '' : archErr.message,
-      supporting: attErr.ok ? '' : attErr.message,
+      demo: uploadCheck.demo.ok ? '' : uploadCheck.demo.message,
+      architecture: uploadCheck.arch.ok ? '' : uploadCheck.arch.message,
+      supporting: uploadCheck.att.ok ? '' : uploadCheck.att.message,
     });
-    if (!demoErr.ok) {
-      toast.error(demoErr.message);
-      return;
-    }
-    if (!archErr.ok) {
-      toast.error(archErr.message);
-      return;
-    }
-    if (!attErr.ok) {
-      toast.error(attErr.message);
+    if (!uploadCheck.ok) {
+      toast.error(uploadCheck.messages.join(' · '));
+      setStep(1);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -423,6 +425,7 @@ const Submit = () => {
     }
 
     setSubmitting(true);
+    setSubmissionUploadFailures([]);
     try {
       const res = await createSubmission(submissionPayload);
       const result = unwrapSubmissionResponse(res);
@@ -432,6 +435,7 @@ const Submit = () => {
         return;
       }
 
+      const uploadFailures = [];
       let uploadHadError = false;
 
       const runUpload = async (label, fn) => {
@@ -439,10 +443,9 @@ const Submit = () => {
           await fn();
         } catch (upErr) {
           uploadHadError = true;
-          toast.error(
-            upErr.response?.data?.message ||
-              `${label} upload failed. Submission is saved — retry uploads from Pipeline.`,
-          );
+          const detail = getApiErrorMessage(upErr);
+          uploadFailures.push({ label, message: detail });
+          toast.error(`${label}: ${detail}`);
         }
       };
 
@@ -457,7 +460,7 @@ const Submit = () => {
       }
 
       if (supportingFiles.length > 0) {
-        await runUpload('Attachments', () => uploadSubmissionAttachments(regId, supportingFiles));
+        await runUpload('Supporting files', () => uploadSubmissionAttachments(regId, supportingFiles));
       }
 
       let merged = { ...result };
@@ -471,15 +474,16 @@ const Submit = () => {
         /* Success UI still works from create + upload responses */
       }
 
+      setSubmissionUploadFailures(uploadFailures);
       setSubmissionResult(merged);
 
       if (!uploadHadError) {
         toast.success('Accelerator submitted successfully!');
       } else {
-        toast.success('Accelerator submitted — some uploads failed; retry from Pipeline.');
+        toast.success('Accelerator saved — retry failed uploads from the pipeline.');
       }
     } catch (e) {
-      toast.error(e.response?.data?.message || 'Submission failed. Please try again.');
+      toast.error(getApiErrorMessage(e, 'Submission failed. Please try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -494,6 +498,7 @@ const Submit = () => {
     setSupportingFiles([]);
     setArchitectureDiagramFile(null);
     setUploadErrors({ demo: '', architecture: '', supporting: '' });
+    setSubmissionUploadFailures([]);
     const defaultCloud = cloudOpts.find((cl) => cl.code === 'gcp')?.code || cloudOpts[cloudOpts.length - 1]?.code || '';
     const defaultMaturity =
       maturityOpts.find((m) => m.code === 'experimental')?.code || maturityOpts[maturityOpts.length - 1]?.code || '';
@@ -538,6 +543,27 @@ const Submit = () => {
               <span className="font-semibold text-text-primary">{form.name}</span> is in the approval queue. Track
               progress in the pipeline.
             </p>
+
+            {submissionUploadFailures.length > 0 ? (
+              <div
+                className="mt-6 text-left rounded-xl border border-amber-200 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 max-w-md mx-auto shadow-sm"
+                role="alert"
+              >
+                <div className="text-2xs font-bold uppercase tracking-wide text-amber-900/90 mb-2">
+                  Some files did not upload
+                </div>
+                <ul className="list-disc pl-4 space-y-1.5 text-amber-950/95">
+                  {submissionUploadFailures.map((f) => (
+                    <li key={f.label}>
+                      <span className="font-semibold">{f.label}:</span> {f.message}
+                    </li>
+                  ))}
+                </ul>
+                <p className="text-2xs text-amber-900/80 mt-2 leading-relaxed">
+                  The submission record is saved. Open it in the approval pipeline to retry uploads when ready.
+                </p>
+              </div>
+            ) : null}
 
             <div className="flex flex-wrap items-stretch justify-center gap-3 mt-8">
               <div className="text-left rounded-xl border border-border bg-surface-muted/50 p-4 min-w-[140px] flex-1 sm:flex-none">
@@ -1114,7 +1140,17 @@ const Submit = () => {
                   <div className="p-3.5 border-b sm:border-b-0 border-border">
                     <div className="text-2xs font-semibold text-text-muted uppercase tracking-wide mb-1">Supporting files</div>
                     <div className="text-sm text-text-primary">
-                      {supportingFiles.length > 0 ? `${supportingFiles.length} file(s) selected` : 'None selected'}
+                      {supportingFiles.length > 0 ? (
+                        <ul className="mt-1 space-y-0.5 text-left text-[13px]">
+                          {supportingFiles.map((sf, i) => (
+                            <li key={`${sf.name}-${i}`} className="truncate font-medium" title={sf.name}>
+                              {sf.name}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        'None selected'
+                      )}
                     </div>
                   </div>
                   <div className="p-3.5 sm:col-span-2 border-t border-border bg-surface-muted/15">

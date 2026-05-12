@@ -151,10 +151,18 @@ export const CatalogTile = ({
               <Tooltip placement="bottom" align="end" title={demoTooltip} className="shrink-0">
                 <button
                   type="button"
-                  disabled={!hasDemoVideo}
+                  aria-disabled={!hasDemoVideo}
+                  tabIndex={hasDemoVideo ? 0 : -1}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (!hasDemoVideo) return;
+                    onPlayDemo?.(asset);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!hasDemoVideo) return;
+                    if (e.key !== 'Enter' && e.key !== ' ') return;
+                    e.preventDefault();
+                    e.stopPropagation();
                     onPlayDemo?.(asset);
                   }}
                   className={`${tagBase} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 transition-colors ${
@@ -273,8 +281,15 @@ export const CatalogListRow = ({
         <Tooltip placement="bottom" align="end" title={demoVideoTooltipText(asset.name, hasVid)} className="shrink-0 self-stretch">
           <button
             type="button"
-            disabled={!hasVid}
+            aria-disabled={!hasVid}
+            tabIndex={hasVid ? 0 : -1}
             onClick={() => hasVid && onPlayDemo?.(asset)}
+            onKeyDown={(e) => {
+              if (!hasVid) return;
+              if (e.key !== 'Enter' && e.key !== ' ') return;
+              e.preventDefault();
+              onPlayDemo?.(asset);
+            }}
             className={`h-full shrink-0 px-3 sm:px-4 border-l border-border flex flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 ${
               hasVid
                 ? 'text-brand-800 bg-surface-muted/40 hover:bg-brand-50'

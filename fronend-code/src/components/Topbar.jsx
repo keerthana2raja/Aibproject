@@ -18,18 +18,18 @@ const PAGE_META = {
   '/pipeline': { title: 'Approval Pipeline', sub: 'Submission status and governance' },
   '/analytics': { title: 'Analytics', sub: 'Usage and deployment metrics' },
   '/settings': { title: 'Settings', sub: 'Preferences and access' },
-  '/help': { title: 'Help', sub: 'Documentation and support' },
+  '/help': { title: 'Help (Coming Soon)', sub: 'Documentation and support' },
 };
 
 function resolveMeta(pathname) {
   if (pathname.startsWith('/detail/')) {
     return { title: 'Asset Detail', sub: 'AIMPLIFY · Enterprise accelerator catalog' };
   }
-  if (pathname.startsWith('/family/')) {
-    return { title: 'Platform Family', sub: 'Scope, dependencies, and assets' };
-  }
   if (/^\/pipeline\/[^/]+$/.test(pathname)) {
     return { title: 'Submission Review', sub: 'AI findings and governance' };
+  }
+  if (pathname.startsWith('/family/')) {
+    return { title: 'Platform Family', sub: 'Scope, dependencies, and assets' };
   }
   if (pathname.startsWith('/catalog/new')) {
     return { title: 'Add to Catalog', sub: 'Register a new asset' };
@@ -123,7 +123,7 @@ const Topbar = ({ onMenuClick }) => {
     results && ((results.assets?.length > 0) || (results.families?.length > 0));
 
   return (
-    <header className="sticky top-0 z-10 flex-shrink-0 bg-surface/90 backdrop-blur-md border-b border-border shadow-topbar">
+    <header className="sticky top-0 z-[300] flex-shrink-0 bg-surface/90 backdrop-blur-md border-b border-border shadow-topbar">
       <div className="h-14 flex items-center px-4 lg:px-6 gap-3 min-w-0">
         <button
           type="button"
@@ -267,7 +267,7 @@ const Topbar = ({ onMenuClick }) => {
             {profileMenuOpen && (
               <div
                 role="menu"
-                className="absolute right-0 top-[calc(100%+8px)] z-[70] min-w-[200px] overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-lg"
+                className="absolute right-0 top-[calc(100%+8px)] z-[320] min-w-[200px] overflow-hidden rounded-xl border border-border bg-surface py-1 shadow-lg"
               >
                 <div className="px-3 py-2 border-b border-border">
                   <div className="text-[13px] font-semibold text-text-primary truncate">{user?.name || 'User'}</div>

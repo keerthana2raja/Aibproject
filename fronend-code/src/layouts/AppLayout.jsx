@@ -1,24 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
-import { getDashboardStats } from '../api/dashboard';
 
 const AppLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [pendingCount, setPendingCount] = useState(0);
-
-  useEffect(() => {
-    let mounted = true;
-    getDashboardStats()
-      .then((r) => {
-        if (mounted) setPendingCount(r?.data?.data?.pendingSubmissions ?? 0);
-      })
-      .catch(() => {});
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   return (
     <div className="flex w-full min-h-screen bg-canvas overflow-hidden">
@@ -36,7 +22,7 @@ const AppLayout = () => {
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <Sidebar onClose={() => setMobileOpen(false)} pendingCount={pendingCount} />
+        <Sidebar onClose={() => setMobileOpen(false)} />
       </div>
 
       <div className="flex-1 flex flex-col min-w-0 h-screen overflow-hidden">
