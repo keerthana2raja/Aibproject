@@ -31,8 +31,6 @@ app.use(
       "https://aimplify.infovision.io",
       "https://www.aimplify.infovision.io",
     ],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
   }),
 );
