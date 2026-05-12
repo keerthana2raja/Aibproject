@@ -742,14 +742,22 @@ exports.recentActivitiesSqlite = async (limit = 15) => {
 
 exports.dashboardStatsSqlite = async () => {
   const db = getDb();
+
+  // Guard: check if catalog_master_value exists before using BATTLE_TESTED_SQL subquery
+  let battleTestedSql = `LOWER(TRIM(maturity)) = 'battle-tested'`;
+  try {
+    await db.execute("SELECT 1 FROM catalog_master_value LIMIT 1");
+    battleTestedSql = BATTLE_TESTED_SQL;
+  } catch (_) {}
+
   const [ta, bt, dr, dep, pend, famDist, fams] = await Promise.all([
-    db.execute("SELECT COUNT(*) AS c FROM assets"),
-    db.execute(`SELECT COUNT(*) AS c FROM assets WHERE ${BATTLE_TESTED_SQL}`),
-    db.execute("SELECT COUNT(*) AS c FROM assets WHERE demoReady=1"),
-    db.execute("SELECT SUM(stats_deploys) AS t FROM assets"),
-    db.execute("SELECT COUNT(*) AS c FROM registrations WHERE status IN ('ai-review','governance','remediation')"),
-    db.execute("SELECT COUNT(DISTINCT TRIM(LOWER(family))) AS c FROM assets WHERE TRIM(COALESCE(family,'')) != ''"),
-    exports.familiesListSqlite(),
+    db.execute("SELECT COUNT(*) AS c FROM assets").catch(() => ({ rows: [{ c: 0 }] })),
+    db.execute(`SELECT COUNT(*) AS c FROM assets WHERE ${battleTestedSql}`).catch(() => ({ rows: [{ c: 0 }] })),
+    db.execute("SELECT COUNT(*) AS c FROM assets WHERE demoReady=1").catch(() => ({ rows: [{ c: 0 }] })),
+    db.execute("SELECT SUM(stats_deploys) AS t FROM assets").catch(() => ({ rows: [{ t: 0 }] })),
+    db.execute("SELECT COUNT(*) AS c FROM registrations WHERE status IN ('ai-review','governance','remediation')").catch(() => ({ rows: [{ c: 0 }] })),
+    db.execute("SELECT COUNT(DISTINCT TRIM(LOWER(family))) AS c FROM assets WHERE TRIM(COALESCE(family,'')) != ''").catch(() => ({ rows: [{ c: 0 }] })),
+    exports.familiesListSqlite().catch(() => []),
   ]);
 
   let notices = [];
