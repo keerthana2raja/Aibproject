@@ -19,7 +19,9 @@ import Spinner from '../components/ui/Spinner';
 import DemoVideoModal from '../components/DemoVideoModal';
 import QuickStartPanel from '../components/QuickStartPanel';
 import AttachedDocumentsPanel from '../components/AttachedDocumentsPanel';
-import { resolveMediaSrc } from '../utils/mediaSrc';
+import { resolveMediaSrc, resolveAttachmentHref } from '../utils/mediaSrc';
+import { pickDemoVideoRelPath, pickDemoVideoRelPathOrFallback } from '../utils/demoVideoUrl';
+import { enrichCatalogAssetFromSubmission } from '../utils/enrichCatalogAssetFromSubmission';
 import { useToast } from '../context/ToastContext';
 
 const MetaItem = ({ label, value }) => (
@@ -55,7 +57,8 @@ const Detail = () => {
         getCatalogMasters().catch(() => ({ data: { data: { values: [] } } })),
       ]);
       const a = assetRes.data.data;
-      setAsset(a);
+      const enriched = await enrichCatalogAssetFromSubmission(a);
+      setAsset(enriched);
 
       const vals = mastersRes.data?.data?.values || [];
       const maturity = {};
@@ -118,7 +121,11 @@ const Detail = () => {
     );
   if (!asset) return null;
 
-  const demoVideoSrc = asset.demoVideoUrl ? resolveMediaSrc(asset.demoVideoUrl) : '';
+  const demoVideoSrc = (() => {
+    const raw = pickDemoVideoRelPathOrFallback(asset);
+    return raw ? resolveMediaSrc(raw) : '';
+  })();
+  const hasApiDemoVideo = !!pickDemoVideoRelPath(asset);
 
   const familyDisplay = familyRow?.name || asset.family;
   const maturityLabel =
@@ -145,11 +152,11 @@ const Detail = () => {
         <span className="text-text-primary font-medium truncate">{asset.name}</span>
       </nav>
 
-      <div className="bg-surface border border-border overflow-hidden rounded-enterprise-md shadow-enterprise">
+      <div className="card card-hover">
         <div className="p-4 lg:p-5">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div className="flex gap-3 min-w-0">
-              <div className="w-11 h-11 border border-border bg-surface-3 flex items-center justify-center flex-shrink-0 font-mono text-[11px] font-semibold text-text-secondary">
+              <div className="w-11 h-11 border border-border bg-surface-3 rounded-lg flex items-center justify-center flex-shrink-0 font-mono text-[11px] font-semibold text-text-secondary">
                 {asset.id?.slice(0, 3) || '—'}
               </div>
               <div className="min-w-0">
@@ -157,10 +164,10 @@ const Detail = () => {
                   {asset.name}
                 </h1>
                 <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary">
+                  <span className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary rounded-md">
                     {maturityLabel}
                   </span>
-                  <span className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary capitalize">
+                  <span className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary capitalize rounded-md">
                     {familyDisplay}
                   </span>
                   {asset.owner && typeof asset.owner === 'string' && (
@@ -175,17 +182,14 @@ const Detail = () => {
               <button
                 type="button"
                 disabled={ctaBusy}
-                onClick={async () => {
-                  if (demoVideoSrc) {
-                    setDemoModalOpen(true);
-                    return;
-                  }
-                  await logCta('demo_opened');
+                onClick={() => {
+                  setDemoModalOpen(true);
+                  if (hasApiDemoVideo) void logCta('demo_opened');
                 }}
-                className="py-1.5 px-3 border border-border bg-surface text-[12px] font-semibold text-text-secondary inline-flex items-center justify-center gap-1.5 hover:bg-surface-3 focus-ring disabled:opacity-50"
+                className="py-1.5 px-3 rounded-lg border border-border bg-surface text-[12px] font-semibold text-text-secondary inline-flex items-center justify-center gap-1.5 hover:bg-surface-3 focus-ring disabled:opacity-50 shadow-sm"
               >
                 {ctaBusy ? <Spinner size="sm" /> : <PlayCircle className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                {demoVideoSrc ? 'Preview demo video' : 'Launch demo'}
+                Launch demo
               </button>
               <button
                 type="button"
@@ -221,7 +225,7 @@ const Detail = () => {
                     .map((label) => (
                       <span
                         key={label}
-                        className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary"
+                        className="text-[10px] font-semibold px-1.5 py-px border border-border bg-surface-3 text-text-secondary rounded-md"
                       >
                         {label}
                       </span>
@@ -248,13 +252,11 @@ const Detail = () => {
 
           <AttachedDocumentsPanel
             attachments={asset.attachments}
-            resolveHref={(relpath) =>
-              resolveMediaSrc(`/v1/uploads/${String(relpath || '').replace(/^\/+/, '')}`)
-            }
+            resolveHref={resolveAttachmentHref}
           />
 
           {asset.tags?.length > 0 && (
-            <section className="bg-surface border border-border p-4">
+            <section className="card card-hover p-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2 flex items-center gap-1.5">
                 <Tag className="w-3 h-3" strokeWidth={1.5} />
                 Tags
@@ -265,7 +267,7 @@ const Detail = () => {
                   return label ? (
                     <span
                       key={i}
-                      className="text-[10px] px-1.5 py-px bg-surface-3 text-text-secondary border border-border font-medium"
+                      className="text-[10px] px-1.5 py-px bg-surface-3 text-text-secondary border border-border font-medium rounded-md"
                     >
                       {label}
                     </span>
@@ -276,7 +278,7 @@ const Detail = () => {
           )}
 
           {asset.changelog?.length > 0 && (
-            <section className="bg-surface border border-border p-4">
+            <section className="card card-hover p-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2">
                 Changelog
               </h2>
@@ -296,7 +298,7 @@ const Detail = () => {
 
         <aside className="flex flex-col gap-3">
           {asset.prerequisites?.length > 0 && (
-            <section className="bg-surface border border-border p-4">
+            <section className="card card-hover p-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2 flex items-center gap-1.5">
                 <CheckCircle2 className="w-3 h-3" strokeWidth={1.5} />
                 Prerequisites
@@ -319,7 +321,7 @@ const Detail = () => {
           )}
 
           {asset.relatedAssets?.length > 0 && (
-            <section className="bg-surface border border-border p-4">
+            <section className="card card-hover p-4">
               <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2 flex items-center gap-1.5">
                 <LinkIcon className="w-3 h-3" strokeWidth={1.5} />
                 Related assets
@@ -341,7 +343,7 @@ const Detail = () => {
             </section>
           )}
 
-          <section className="bg-surface border border-border p-4">
+          <section className="card card-hover p-4">
             <h2 className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-3">
               Usage
             </h2>
@@ -360,7 +362,7 @@ const Detail = () => {
               ].map(({ val, label }) => (
                 <div
                   key={label}
-                  className="border border-border bg-surface-3 px-2 py-2 text-center"
+                  className="border border-border bg-surface-3 px-2 py-2 text-center rounded-lg"
                 >
                   <div className="text-[16px] font-semibold text-text-primary tabular-nums leading-none">
                     {val}
@@ -376,7 +378,7 @@ const Detail = () => {
       </div>
 
       <DemoVideoModal
-        open={demoModalOpen && !!demoVideoSrc}
+        open={demoModalOpen}
         title={asset.name}
         src={demoVideoSrc}
         onClose={() => setDemoModalOpen(false)}

@@ -22,7 +22,7 @@ const AttachedDocumentsPanel = ({ attachments, resolveHref, className = '' }) =>
 
   return (
     <section
-      className={`rounded-xl border border-border bg-surface shadow-card overflow-hidden ${className}`.trim()}
+      className={`rounded-xl border border-border bg-surface shadow-card card-hover overflow-hidden ${className}`.trim()}
     >
       <h2 className="flex items-center gap-2 px-4 py-3.5 border-b border-border bg-surface-muted/40">
         <Paperclip className="w-[18px] h-[18px] text-brand-700 shrink-0" strokeWidth={2} />

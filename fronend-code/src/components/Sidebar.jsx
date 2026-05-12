@@ -159,7 +159,7 @@ const Sidebar = ({ onClose, pendingCount = 0 }) => {
         <NavItem to="/analytics" icon={BarChart3} label="Analytics" onClick={onClose} collapsed={collapsed} />
 
         <SectionLabel label="System" collapsed={collapsed} />
-        <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} collapsed={collapsed} />
+        {/* <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} collapsed={collapsed} /> */}
         <NavItem to="/help" icon={LifeBuoy} label="Help" onClick={onClose} collapsed={collapsed} />
       </nav>
     </aside>

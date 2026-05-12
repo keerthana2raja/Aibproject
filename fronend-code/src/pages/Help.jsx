@@ -15,6 +15,12 @@ import Spinner from '../components/ui/Spinner';
 import PageLoader from '../components/ui/PageLoader';
 import ErrorState from '../components/ui/ErrorState';
 
+/** Align copy with app nav: "Catalog" (API may still return British "catalogue"). */
+function helpDisplayText(text) {
+  if (text == null || typeof text !== 'string') return text;
+  return text.replace(/\bcatalogue\b/gi, 'Catalog');
+}
+
 const ICON_MAP = {
   book: BookOpen,
   video: Video,
@@ -33,7 +39,7 @@ const FaqItem = ({ question, answer }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full flex items-center justify-between py-3 text-left focus-ring"
       >
-        <span className="text-[12px] font-semibold text-text-primary pr-2">{question}</span>
+        <span className="text-[12px] font-semibold text-text-primary pr-2">{helpDisplayText(question)}</span>
         <ChevronDown
           className={`w-3.5 h-3.5 text-text-muted flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
           strokeWidth={1.5}
@@ -41,7 +47,7 @@ const FaqItem = ({ question, answer }) => {
       </button>
       {isOpen && (
         <div className="text-[12px] text-text-secondary pb-3 leading-relaxed pr-6">
-          {answer}
+          {helpDisplayText(answer)}
         </div>
       )}
     </div>
@@ -60,15 +66,17 @@ const Tile = ({ iconKey, title, subtitle, action, onSwagger }) => {
       type="button"
       onClick={isClickable ? handleClick : undefined}
       disabled={!isClickable}
-      className={`bg-surface border border-border p-3 text-left transition-colors focus-ring ${
-        isClickable ? 'hover:border-border-mid cursor-pointer' : 'opacity-95 cursor-default'
+      className={`card p-3 text-left transition-colors focus-ring ${
+        isClickable
+          ? 'card-hover hover:border-border-mid cursor-pointer'
+          : 'opacity-95 cursor-default'
       }`}
     >
-      <div className="w-8 h-8 border border-border bg-surface-3 flex items-center justify-center mb-2">
+      <div className="w-8 h-8 border border-border bg-surface-3 rounded-lg flex items-center justify-center mb-2">
         <Icon className="w-4 h-4 text-text-muted" strokeWidth={1.5} />
       </div>
-      <div className="text-[12px] font-semibold text-text-primary">{title}</div>
-      <div className="text-[10px] text-text-muted mt-0.5">{subtitle}</div>
+      <div className="text-[12px] font-semibold text-text-primary">{helpDisplayText(title)}</div>
+      <div className="text-[10px] text-text-muted mt-0.5">{helpDisplayText(subtitle)}</div>
     </button>
   );
 };
@@ -148,8 +156,9 @@ const Help = () => {
       <div>
         <h2 className="text-[13px] font-semibold text-text-primary">Help</h2>
         <p className="text-[11px] text-text-muted mt-0.5">
-          {helpPayload?.subtitle ||
-            'Search uses the live registry API; topics below are loaded from GET /v1/help.'}
+          {helpPayload?.subtitle
+            ? helpDisplayText(helpPayload.subtitle)
+            : 'Search uses the live registry API; topics below are loaded from GET /v1/help.'}
         </p>
       </div>
 
@@ -163,7 +172,7 @@ const Help = () => {
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Search catalog (assets & families from server)…"
-          className="w-full pl-8 pr-8 py-2 border border-border bg-surface text-[12px] outline-none focus:border-border-mid focus:ring-1 focus:ring-border-mid"
+          className="w-full pl-8 pr-8 py-2 rounded-lg border border-border bg-surface text-[12px] outline-none focus:border-border-mid focus:ring-1 focus:ring-border-mid shadow-inner"
         />
         {searching && (
           <div className="absolute right-2 top-1/2 -translate-y-1/2">
@@ -173,7 +182,7 @@ const Help = () => {
       </div>
 
       {q.trim() && !searching && results && (
-        <div className="border border-border bg-surface p-3 text-[11px] max-w-lg">
+        <div className="card card-hover p-3 text-[11px] max-w-lg">
           {results._error ? (
             <span className="text-text-muted">Search unavailable. Ensure the API is running.</span>
           ) : hasHits ? (
@@ -231,7 +240,7 @@ const Help = () => {
         ))}
       </div>
 
-      <div className="bg-surface border border-border p-4">
+      <div className="card card-hover p-4">
         <div className="text-[10px] font-semibold uppercase tracking-wide text-text-muted mb-2">
           Frequently asked
         </div>
@@ -240,11 +249,11 @@ const Help = () => {
         ))}
       </div>
 
-      <div className="bg-surface border border-border p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      <div className="card card-hover p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <div className="text-[12px] font-semibold text-text-primary">{contact.title}</div>
           {contact.description ? (
-            <div className="text-[11px] text-text-muted mt-0.5">{contact.description}</div>
+            <div className="text-[11px] text-text-muted mt-0.5">{helpDisplayText(contact.description)}</div>
           ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
@@ -258,7 +267,7 @@ const Help = () => {
                 className={
                   primary
                     ? 'inline-flex items-center gap-1.5 px-3 py-1.5 btn-primary'
-                    : 'inline-flex items-center gap-1.5 px-3 py-1.5 border border-border bg-surface text-[12px] font-semibold text-text-secondary hover:bg-surface-3 focus-ring'
+                    : 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface text-[12px] font-semibold text-text-secondary shadow-sm hover:bg-surface-3 focus-ring'
                 }
               >
                 <BtnIcon className="w-3.5 h-3.5" strokeWidth={1.5} />

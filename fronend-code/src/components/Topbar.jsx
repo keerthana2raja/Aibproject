@@ -1,10 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  Bell,
   Search,
   Menu,
   UserRound,
-  Settings,
   LogOut,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -251,15 +249,6 @@ const Topbar = ({ onMenuClick }) => {
             <Search className="w-4 h-4" />
           </button>
 
-          <button
-            type="button"
-            className="p-2 rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-muted hover:text-brand-600 shadow-sm transition-colors relative"
-            aria-label="Notifications"
-          >
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-brand-500 ring-2 ring-surface" />
-          </button>
-
           <div className="relative" ref={profileMenuRef}>
             <button
               type="button"
@@ -284,18 +273,7 @@ const Topbar = ({ onMenuClick }) => {
                   <div className="text-[13px] font-semibold text-text-primary truncate">{user?.name || 'User'}</div>
                   <div className="text-[11px] text-text-muted truncate">{user?.email || ''}</div>
                 </div>
-                <button
-                  type="button"
-                  role="menuitem"
-                  className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[13px] font-medium text-text-primary hover:bg-surface-muted"
-                  onClick={() => {
-                    setProfileMenuOpen(false);
-                    navigate('/settings');
-                  }}
-                >
-                  <Settings className="w-4 h-4 text-text-muted shrink-0" strokeWidth={1.5} aria-hidden />
-                  Settings
-                </button>
+                {/* Settings button hidden for demo */}
                 <button
                   type="button"
                   role="menuitem"

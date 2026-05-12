@@ -72,13 +72,17 @@ const simulateAIReview = async (docId) => {
 };
 
 const createRegistration = async (data, submitter) => {
+  const nameNorm = String(data.name ?? "").trim();
+  const familyNorm = String(data.family ?? "").trim().toLowerCase();
+  const descNorm = String(data.description ?? "").trim();
+
   if (isSqliteMode()) {
     const registrationId = await sqlite.nextRegistrationIdSqlite();
     const result = await sqlite.registrationCreateSqlite({
       registrationId,
-      name: data.name,
-      family: data.family,
-      description: data.description,
+      name: nameNorm,
+      family: familyNorm,
+      description: descNorm,
       submitedBy: submitter || "System",
       // extended fields
       owner: data.owner || submitter || "",
@@ -97,16 +101,16 @@ const createRegistration = async (data, submitter) => {
       actorName: submitter || "System",
       action: "submitted",
       resourceType: "registration",
-      description: data.name,
-      summary: `${submitter || "System"} submitted "${data.name}" for registration`,
+      description: nameNorm,
+      summary: `${submitter || "System"} submitted "${nameNorm}" for registration`,
     });
     return result;
   }
 
   const registration = await Registration.create({
-    name: data.name,
-    family: data.family,
-    description: data.description,
+    name: nameNorm,
+    family: familyNorm,
+    description: descNorm,
     submitedBy: submitter || "System",
     quickStart: data.quickStart || "",
     date: new Date(),

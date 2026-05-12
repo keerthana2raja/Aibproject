@@ -420,8 +420,8 @@ const Dashboard = () => {
                 <div className="h-12 bg-surface-muted border border-border rounded-lg animate-pulse" />
               ) : (
                 <>
-                  {(stats?.notices || []).map((n) => (
-                    <NoticeRow key={n.headline}>
+                  {(stats?.notices || []).map((n, idx) => (
+                    <NoticeRow key={n?.id != null && n.id !== '' ? String(n.id) : `notice-${idx}`}>
                       <span className="font-semibold text-text-primary">{typeof n.headline === 'string' ? n.headline : String(n.headline ?? '')}:</span> {typeof n.detail === 'string' ? n.detail : String(n.detail ?? '')}
                     </NoticeRow>
                   ))}

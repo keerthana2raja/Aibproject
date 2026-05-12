@@ -7,7 +7,7 @@ module.exports = {
     'Search uses the live registry API. Frequently asked topics and shortcuts are curated here.',
   resourceTiles: [
     { icon: 'book', title: 'Getting started', subtitle: 'Submit an accelerator, track pipeline reviews' },
-    { icon: 'video', title: 'Walkthroughs', subtitle: 'Use Catalogue + Family detail from live data' },
+    { icon: 'video', title: 'Walkthroughs', subtitle: 'Use Catalog + Family detail from live data' },
     {
       icon: 'terminal',
       title: 'API reference',
@@ -34,10 +34,10 @@ module.exports = {
     {
       question: 'What does Request access do on an asset?',
       answer:
-        'It posts an activity entry (POST /v1/activity) so operators can correlate access interest with catalogue usage.',
+        'It posts an activity entry (POST /v1/activity) so operators can correlate access interest with Catalog usage.',
     },
     {
-      question: 'Where does catalogue maturity come from?',
+      question: 'Where does Catalog maturity come from?',
       answer:
         'Maturity values are loaded from GET /v1/catalog/masters (linked to SQLite catalog_master_* tables in local dev).',
     },

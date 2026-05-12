@@ -14,6 +14,7 @@ import {
   topAccentBorderClass,
 } from '../components/CatalogueTileCard';
 import { resolveMediaSrc } from '../utils/mediaSrc';
+import { pickDemoVideoRelPath } from '../utils/demoVideoUrl';
 
 const FamilyDetail = () => {
   const { id } = useParams();
@@ -72,7 +73,8 @@ const FamilyDetail = () => {
   const famLabel = family?.name || id;
 
   const openDemo = (asset) => {
-    const src = asset?.demoVideoUrl ? resolveMediaSrc(asset.demoVideoUrl) : '';
+    const raw = pickDemoVideoRelPath(asset);
+    const src = raw ? resolveMediaSrc(raw) : '';
     if (!src) return;
     setDemoModal({ title: asset.name, src });
   };

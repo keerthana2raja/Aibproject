@@ -18,6 +18,7 @@ import {
   effortToTier,
 } from '../components/CatalogueTileCard';
 import { resolveMediaSrc } from '../utils/mediaSrc';
+import { pickDemoVideoRelPath } from '../utils/demoVideoUrl';
 
 const Segmented = ({ value, onChange, options }) => (
   <div
@@ -80,7 +81,8 @@ const Catalogue = () => {
   const [demoModal, setDemoModal] = useState(null);
 
   const openDemo = (asset) => {
-    const src = asset?.demoVideoUrl ? resolveMediaSrc(asset.demoVideoUrl) : '';
+    const raw = pickDemoVideoRelPath(asset);
+    const src = raw ? resolveMediaSrc(raw) : '';
     if (!src) return;
     setDemoModal({ title: asset.name, src });
   };

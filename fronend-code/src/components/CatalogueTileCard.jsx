@@ -8,6 +8,7 @@ import {
   PlayCircle,
 } from 'lucide-react';
 import { Tooltip } from './Tooltip';
+import { pickDemoVideoRelPath } from '../utils/demoVideoUrl';
 
 /** Thin top-edge accent only — L/R/B stay neutral enterprise border */
 export const FAMILY_TOP_ACCENT = {
@@ -110,7 +111,7 @@ export const CatalogueTile = ({
       ? COMPLEXITY_TAG[complexityTier]
       : 'border-border bg-surface-muted text-text-secondary';
 
-  const hasDemoVideo = !!asset.demoVideoUrl;
+  const hasDemoVideo = !!pickDemoVideoRelPath(asset);
   const showDemoBadge = hasDemoVideo || (asset.stats?.demos ?? 0) > 0;
   const dept = asset.owner || 'Platform catalog';
 
@@ -259,7 +260,7 @@ export const CatalogueListRow = ({
       </div>
       <ArrowUpRight className="w-4 h-4 text-text-muted shrink-0 mt-1 opacity-60" strokeWidth={2} />
     </button>
-    {asset.demoVideoUrl ? (
+    {pickDemoVideoRelPath(asset) ? (
       <button
         type="button"
         onClick={() => onPlayDemo?.(asset)}

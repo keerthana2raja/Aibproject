@@ -49,7 +49,7 @@ function App() {
           <Route path="pipeline"   element={<Pipeline />} />
           <Route path="pipeline/:id" element={<SubmissionDetail />} />
           <Route path="analytics"  element={<Analytics />} />
-          <Route path="settings"   element={<Settings />} />
+          {/* <Route path="settings"   element={<Settings />} /> */}
           <Route path="help"       element={<Help />} />
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
