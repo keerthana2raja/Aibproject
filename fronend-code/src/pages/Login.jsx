@@ -2,22 +2,11 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useNavigate } from 'react-router-dom';
 import {
   Layers,
-  Lock,
-  ArrowRight,
   Eye,
   EyeOff,
   AlertCircle,
   RefreshCw,
-  FolderSearch,
-  Package,
-  Users,
-  TrendingUp,
-  GitPullRequest,
-  Sparkles,
   Database,
-  Shield,
-  Activity,
-  Box,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/ui/Spinner';
@@ -46,14 +35,13 @@ function writePlatformCountsCache(rows) {
   }
 }
 
-const ICON_GRADIENTS = [
-  'from-sky-500 to-blue-600 shadow-sky-500/25',
-  'from-indigo-500 to-violet-600 shadow-indigo-500/25',
-  'from-emerald-500 to-teal-600 shadow-emerald-500/25',
-  'from-amber-500 to-orange-600 shadow-amber-500/25',
-  'from-violet-500 to-purple-600 shadow-violet-500/25',
-  'from-rose-500 to-pink-600 shadow-rose-500/25',
-];
+const FAMILY_NUMBER_COLORS = {
+  family_atlas:    'text-teal-500',
+  family_forge:    'text-orange-500',
+  family_nexus:    'text-violet-500',
+  family_relay:    'text-green-500',
+  family_sentinel: 'text-red-500',
+};
 
 function coerceNumber(val) {
   if (typeof val === 'number' && Number.isFinite(val)) return val;
@@ -148,49 +136,17 @@ function rowsFromPlatformCounts(body) {
   return rows;
 }
 
-function iconForStatKey(keyId) {
-  const k = keyId.toLowerCase();
-  if (k.includes('forge')) return GitPullRequest;
-  if (k.includes('atlas')) return Database;
-  if (k.includes('nexus')) return Box;
-  if (k.includes('relay')) return TrendingUp;
-  if (k.includes('sentinel')) return Shield;
-  if (k.includes('asset')) return Package;
-  if (k.includes('family')) return FolderSearch;
-  if (k.includes('user') || k.includes('contributor')) return Users;
-  if (k.includes('deploy')) return TrendingUp;
-  if (k.includes('submission') || k.includes('pipeline') || k.includes('reg')) return GitPullRequest;
-  if (k.includes('accel')) return Sparkles;
-  if (k.includes('audit') || k.includes('activity')) return Activity;
-  if (k.includes('catalog')) return Database;
-  if (k.includes('policy') || k.includes('govern')) return Shield;
-  if (k.includes('demo')) return Box;
-  return Layers;
-}
-
-function StatCardSkeleton({ index }) {
+function StatCardSkeleton() {
   return (
-    <div
-      className="flex h-full min-h-[7.75rem] flex-col rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm overflow-hidden motion-reduce:animate-none sm:min-h-[8rem] sm:p-3.5"
-      aria-hidden
-    >
-      <div className="h-8 w-8 rounded-lg bg-slate-200/70 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
-      <div className="mt-2 h-7 w-12 rounded-md bg-slate-200/60 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
-      <div className="mt-1.5 h-2.5 w-20 rounded bg-slate-200/55 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
-      <div className="mt-auto min-h-[2.25rem] pt-1">
-        <div className="h-2 w-full max-w-[6.5rem] rounded bg-slate-200/50 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
-      </div>
-      <div
-        className="mt-2 h-0.5 rounded-full bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 motion-safe:animate-[pulse_2s_ease-in-out_infinite]"
-        style={{ animationDelay: `${index * 120}ms` }}
-      />
+    <div className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-5 shadow-sm animate-pulse" aria-hidden>
+      <div className="h-7 w-8 rounded bg-slate-200" />
+      <div className="mt-2 h-2.5 w-12 rounded bg-slate-200" />
     </div>
   );
 }
 
-function StatCard({ row, index }) {
-  const Icon = iconForStatKey(row.id);
-  const grad = ICON_GRADIENTS[index % ICON_GRADIENTS.length];
+function StatCard({ row }) {
+  const color = FAMILY_NUMBER_COLORS[row.id] ?? 'text-brand-600';
   const formatted =
     row.value >= 1_000_000
       ? `${(row.value / 1_000_000).toFixed(1)}M`
@@ -200,31 +156,11 @@ function StatCard({ row, index }) {
 
   return (
     <article
-      className="group relative flex h-full min-h-[7.75rem] min-w-0 flex-col rounded-xl border border-slate-200/90 bg-white p-3 shadow-[0_2px_16px_-6px_rgba(15,23,42,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-sky-200/80 hover:shadow-[0_8px_28px_-10px_rgba(14,165,233,0.16)] sm:min-h-[8rem] sm:p-3.5"
+      className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-5 shadow-sm hover:shadow-md transition-shadow"
       aria-label={`${row.label}: ${formatted}`}
     >
-      <div
-        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-md`}
-      >
-        <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
-      </div>
-      <p className="mt-2 text-lg font-bold tabular-nums tracking-tight text-slate-900 sm:text-xl">
-        {formatted}
-      </p>
-      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-slate-500 leading-tight line-clamp-2">
-        {row.label}
-      </p>
-      <div className="mt-1 min-h-[2.25rem] flex-1">
-        {row.tagline ? (
-          <p className="text-[9px] sm:text-[10px] font-normal normal-case tracking-normal leading-snug text-slate-400 line-clamp-2">
-            {row.tagline}
-          </p>
-        ) : null}
-      </div>
-      <div
-        className="pointer-events-none mt-1 h-px bg-gradient-to-r from-transparent via-sky-200/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        aria-hidden
-      />
+      <p className={`text-2xl font-bold tabular-nums ${color}`}>{formatted}</p>
+      <p className="mt-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">{row.label}</p>
     </article>
   );
 }
@@ -281,7 +217,15 @@ const Login = () => {
     return () => ac.abort();
   }, [fetchCounts]);
 
-  const displayRows = useMemo(() => countsRows, [countsRows]);
+  const displayRows = useMemo(
+    () => countsRows.filter((r) => r.id.startsWith('family_')),
+    [countsRows],
+  );
+
+  const totalAssetsCount = useMemo(
+    () => countsRows.find((r) => r.id === 'totalAssets')?.value ?? null,
+    [countsRows],
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -303,139 +247,121 @@ const Login = () => {
   const showEmptyCounts = !countsLoading && !countsError && displayRows.length === 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 via-white to-sky-50/40 text-slate-900 antialiased">
-      <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-24 left-1/2 h-80 w-[min(100%,48rem)] -translate-x-1/2 rounded-full bg-gradient-to-b from-sky-100/60 to-transparent blur-3xl" />
-        <div className="absolute bottom-0 right-0 h-64 w-64 rounded-full bg-blue-100/30 blur-3xl" />
-      </div>
+    <div className="min-h-screen flex flex-col lg:flex-row antialiased">
 
-      <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 lg:px-10 lg:pb-16 lg:pt-12">
-        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_min(100%,420px)] lg:gap-12 xl:gap-14">
-          {/* —— Marketing + stats —— */}
-          <div className="min-w-0 pr-0 sm:pr-1">
-            <header className="mb-8 lg:mb-10">
-              <div className="flex flex-wrap items-start gap-4">
-                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 shadow-lg shadow-brand-700/25 ring-4 ring-white">
-                  <Layers className="h-7 w-7 text-white" strokeWidth={1.75} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-700">AIMPLIFY</p>
-                  <h1 className="mt-1 text-2xl font-bold leading-tight tracking-tight text-slate-900 sm:text-3xl lg:text-[1.85rem] lg:leading-snug">
-                    AI Capabilities &amp; Accelerator Platform
-                  </h1>
-                  <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-600">
-                    Discover, deploy, and demonstrate InfoVision&apos;s AI assets — from prompt libraries and
-                    agent patterns to production-ready accelerators.
-                  </p>
-                </div>
-              </div>
-            </header>
-
-            <section
-              className="rounded-3xl border border-slate-200/80 bg-white/70 p-4 shadow-[0_8px_40px_-20px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:p-5 lg:p-6"
-              aria-labelledby="platform-snapshot-heading"
-            >
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3 sm:pb-3.5">
-                <div>
-                  <h2
-                    id="platform-snapshot-heading"
-                    className="text-[11px] font-bold uppercase tracking-[0.14em] text-slate-500"
-                  >
-                    Platform snapshot
-                  </h2>
-                  <p className="mt-1 text-xs text-slate-500">Live counts from your environment</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => void fetchCounts(undefined, { silent: false })}
-                  disabled={countsLoading}
-                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition-all hover:border-sky-300 hover:bg-sky-50 hover:text-sky-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500/40 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <RefreshCw
-                    className={`h-3.5 w-3.5 ${countsLoading ? 'animate-spin' : ''}`}
-                    strokeWidth={2}
-                    aria-hidden
-                  />
-                  Refresh
-                </button>
-              </div>
-
-              {countsError && (
-                <div
-                  role="alert"
-                  className="mt-4 flex gap-3 rounded-xl border border-amber-200/90 bg-amber-50 px-4 py-3 text-sm text-amber-950"
-                >
-                  <AlertCircle className="h-5 w-5 shrink-0 text-amber-600" strokeWidth={2} />
-                  <div className="min-w-0">
-                    <p className="font-semibold text-amber-950">Metrics unavailable</p>
-                    <p className="mt-0.5 text-amber-900/90">{countsError}</p>
-                    <button
-                      type="button"
-                      onClick={() => void fetchCounts(undefined, { silent: false })}
-                      className="mt-2 text-xs font-bold text-amber-800 underline underline-offset-2 hover:text-amber-950"
-                    >
-                      Try again
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div
-                className="mt-4 grid grid-cols-2 gap-2 sm:gap-2.5 md:grid-cols-4 md:gap-3"
-                aria-busy={showSkeletonGrid}
-                aria-live="polite"
-              >
-                {showSkeletonGrid ? (
-                  Array.from({ length: 8 }).map((_, i) => <StatCardSkeleton key={i} index={i} />)
-                ) : showEmptyCounts ? (
-                  <div className="col-span-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 py-10 text-center md:col-span-4">
-                    <Database className="h-10 w-10 text-slate-300" strokeWidth={1.5} aria-hidden />
-                    <p className="mt-3 text-sm font-semibold text-slate-600">No metrics in this response</p>
-                    <p className="mt-1 max-w-sm px-4 text-xs text-slate-500">
-                      The server returned no numeric fields. Check <code className="rounded bg-slate-200/60 px-1">/v1/platform/counts</code> payload.
-                    </p>
-                  </div>
-                ) : (
-                  displayRows.map((row, i) => <StatCard key={row.id} row={row} index={i} />)
-                )}
-              </div>
-            </section>
+      {/* ── Left: blue panel ── */}
+      <div className="flex flex-col justify-between bg-brand-700 px-8 py-10 lg:w-[55%] lg:px-14 lg:py-14">
+        <div>
+          {/* Brand */}
+          <div className="flex items-center gap-3 mb-10">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15 ring-1 ring-white/20">
+              <Layers className="h-6 w-6 text-white" strokeWidth={1.75} />
+            </div>
+            <div>
+              <p className="text-[15px] font-extrabold tracking-tight text-white leading-none">AIMPLIFY</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-blue-200 mt-0.5">by InfoVision</p>
+            </div>
           </div>
 
-          {/* —— Login card —— */}
-          <div className="lg:pt-4">
-            <div className="rounded-3xl border border-slate-200/90 bg-white p-7 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.16)] ring-1 ring-slate-900/[0.03] sm:p-9">
-              <div className="mb-8 flex flex-col items-center text-center">
+          {/* Heading */}
+          <h1 className="text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl">
+            AI Capabilities &amp;<br />Accelerator Platform
+          </h1>
+          <p className="mt-4 max-w-lg text-[15px] leading-relaxed text-blue-100/90">
+            Discover, deploy, and demonstrate InfoVision&apos;s AI assets — from prompt libraries and
+            agent patterns to production-ready accelerators.
+          </p>
+
+          {/* Platform snapshot */}
+          <section
+            className="mt-10 rounded-2xl bg-white/10 ring-1 ring-white/15 p-5"
+            aria-labelledby="platform-snapshot-heading"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h2
+                  id="platform-snapshot-heading"
+                  className="text-[11px] font-bold uppercase tracking-widest text-blue-100"
+                >
+                  Platform Snapshot
+                </h2>
+                <p className="text-[11px] text-blue-200/80 mt-0.5">Live counts from your environment</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => void fetchCounts(undefined, { silent: false })}
+                disabled={countsLoading}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 ring-1 ring-white/20 px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-white/25 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${countsLoading ? 'animate-spin' : ''}`} strokeWidth={2} aria-hidden />
+                Refresh
+              </button>
+            </div>
+
+            {countsError && (
+              <div role="alert" className="mb-3 flex gap-2 rounded-lg bg-amber-400/20 ring-1 ring-amber-300/30 px-3 py-2 text-xs text-amber-100">
+                <AlertCircle className="h-4 w-4 shrink-0 text-amber-300 mt-0.5" strokeWidth={2} />
+                <span>{countsError}</span>
+              </div>
+            )}
+
+            <div
+              className="grid grid-cols-3 gap-2 sm:grid-cols-5 sm:gap-3"
+              aria-busy={showSkeletonGrid}
+              aria-live="polite"
+            >
+              {showSkeletonGrid ? (
+                Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
+              ) : showEmptyCounts ? (
+                <div className="col-span-3 sm:col-span-5 py-6 text-center text-sm text-blue-200">
+                  No platform data
+                </div>
+              ) : (
+                displayRows.map((row) => <StatCard key={row.id} row={row} />)
+              )}
+            </div>
+          </section>
+        </div>
+
+      </div>
+
+      {/* ── Right: login panel ── */}
+      <div className="flex flex-col justify-between bg-slate-100 px-6 py-10 lg:w-[45%] lg:px-14 lg:py-14">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-[420px]">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-8 shadow-[0_4px_32px_-8px_rgba(15,23,42,0.10)]">
+              {/* InfoVision logo */}
+              <div className="mb-6 text-center">
                 <img
                   src={infovisionLogo}
-                  alt=""
-                  aria-hidden
-                  className="h-8 w-auto max-w-[200px] object-contain opacity-90 sm:h-9"
+                  alt="InfoVision"
+                  className="mx-auto h-16 w-auto max-w-[240px] object-contain"
                   draggable={false}
                 />
-                <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+                <p className="mt-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">
                   Enterprise sign in
                 </p>
               </div>
+              <hr className="border-slate-100 mb-6" />
 
-              <h2 className="text-lg font-semibold text-slate-900">Sign in</h2>
+              <h2 className="text-[18px] font-bold text-slate-900">Sign in</h2>
               <p className="mt-1 text-[13px] text-slate-500">Use your InfoVision credentials</p>
 
               {error && (
                 <div
-                  className="mt-5 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3"
+                  className="mt-4 flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2.5"
                   role="alert"
                 >
-                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" strokeWidth={2} />
-                  <span className="text-[13px] leading-snug text-red-900/90">{error}</span>
+                  <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" strokeWidth={2} />
+                  <span className="text-[13px] text-red-800">{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="mt-5 space-y-4">
                 <div>
                   <label
                     htmlFor="login-email"
-                    className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.55px] text-slate-600"
+                    className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500"
                   >
                     Email
                   </label>
@@ -446,21 +372,17 @@ const Login = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@infovision.com"
                     autoComplete="email"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-[15px] text-slate-900 outline-none ring-slate-200/50 transition-[box-shadow,border-color] placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-500/15"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-[14px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/15 transition-[box-shadow,border-color]"
                   />
                 </div>
                 <div>
                   <label
                     htmlFor="login-password"
-                    className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.55px] text-slate-600"
+                    className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500"
                   >
                     Password
                   </label>
                   <div className="relative">
-                    <Lock
-                      className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-slate-400"
-                      strokeWidth={1.75}
-                    />
                     <input
                       id="login-password"
                       type={showPwd ? 'text' : 'password'}
@@ -468,20 +390,18 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password"
                       autoComplete="current-password"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 py-3 pl-11 pr-11 text-[15px] text-slate-900 outline-none transition-[box-shadow,border-color] placeholder:text-slate-400 focus:border-sky-400 focus:bg-white focus:ring-4 focus:ring-sky-500/15"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 pr-11 text-[14px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/15 transition-[box-shadow,border-color]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPwd((v) => !v)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                       tabIndex={-1}
                       aria-label={showPwd ? 'Hide password' : 'Show password'}
                     >
-                      {showPwd ? (
-                        <EyeOff className="h-4 w-4" strokeWidth={1.75} />
-                      ) : (
-                        <Eye className="h-4 w-4" strokeWidth={1.75} />
-                      )}
+                      {showPwd
+                        ? <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+                        : <Eye className="h-4 w-4" strokeWidth={1.75} />}
                     </button>
                   </div>
                 </div>
@@ -489,60 +409,34 @@ const Login = () => {
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="mt-2 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-brand-600 to-brand-700 py-3.5 text-[15px] font-semibold text-white shadow-lg shadow-brand-600/25 transition-[transform,box-shadow,filter] hover:from-brand-700 hover:to-brand-800 hover:shadow-xl active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="w-full rounded-xl bg-brand-600 py-3.5 text-[15px] font-semibold text-white shadow-sm hover:bg-brand-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150"
                 >
                   {authLoading ? (
-                    <>
+                    <span className="flex items-center justify-center gap-2">
                       <Spinner size="sm" color="white" />
-                      <span>Signing in…</span>
-                    </>
-                  ) : (
-                    <>
-                      Sign in
-                      <ArrowRight className="h-4 w-4" strokeWidth={2.5} />
-                    </>
-                  )}
+                      Signing in…
+                    </span>
+                  ) : 'Sign in'}
                 </button>
               </form>
 
-              <div className="my-6 flex items-center gap-3">
-                <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-[11px] font-semibold uppercase tracking-wide text-slate-400">or</span>
-                <div className="h-px flex-1 bg-slate-200" />
-              </div>
-
-              <button
-                type="button"
-                disabled
-                title="Not available in this deployment"
-                className="w-full cursor-not-allowed rounded-xl border border-dashed border-slate-200 bg-slate-50 py-3.5 text-[14px] font-semibold text-slate-400 opacity-80"
-              >
-                Continue with Microsoft Entra ID (SSO)
-              </button>
-
-              <p className="mt-6 text-center text-[11px] leading-relaxed text-slate-500">
+              <p className="mt-5 text-center text-[12px] text-slate-500">
                 Access issues?{' '}
                 <a
                   href="mailto:it@infovision.com"
-                  className="font-semibold text-sky-700 underline-offset-2 hover:underline"
+                  className="font-semibold text-brand-600 hover:underline underline-offset-2"
                 >
                   Contact IT
                 </a>
               </p>
             </div>
-
-            <p className="mt-6 text-center text-[12px] text-slate-500">
-              Infovision IT Help ·{' '}
-              <a href="#" className="text-slate-600 underline-offset-2 hover:text-sky-800 hover:underline">
-                Privacy
-              </a>{' '}
-              ·{' '}
-              <a href="#" className="text-slate-600 underline-offset-2 hover:text-sky-800 hover:underline">
-                Terms
-              </a>
-            </p>
           </div>
         </div>
+
+        {/* Page footer */}
+        <footer className="pt-6 text-center text-[12px] text-slate-400">
+          © 2026 InfoVision, Inc. All rights reserved.
+        </footer>
       </div>
     </div>
   );

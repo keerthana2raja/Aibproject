@@ -219,14 +219,6 @@ const Catalogue = () => {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2 self-start">
-          {canEdit && (
-            <Link
-              to="/catalog/new"
-              className="btn-ghost shadow-sm"
-            >
-              Add to catalog
-            </Link>
-          )}
           <button type="button" className="btn-primary shadow-md" onClick={() => navigate('/submit')}>
             <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
             Submit asset
