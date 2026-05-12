@@ -16,6 +16,7 @@ const activityRoutes = require("./routes/activityRoutes");
 const userRoutes = require("./routes/userRoutes");
 const catalogRoutes = require("./routes/catalogRoutes");
 const helpRoutes = require("./routes/helpRoutes");
+const platformRoutes = require("./routes/platformRoutes");
 const { isSqliteMode } = require("./config/sqlite");
 
 const app = express();
@@ -66,6 +67,7 @@ app.use("/v1/activity", activityRoutes);
 app.use("/v1/users", userRoutes);
 app.use("/v1/catalog", catalogRoutes);
 app.use("/v1/help", helpRoutes);
+app.use("/v1/platform", platformRoutes);
 
 // NOTE: /v1/uploads static serving removed — files now live in Vercel Blob (public URLs stored in DB).
 
