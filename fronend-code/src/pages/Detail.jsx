@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   ChevronRight,
   PlayCircle,
-  GitPullRequest,
   Tag,
   CheckCircle2,
   Check,
@@ -15,12 +14,12 @@ import { getFamilyByKey } from '../api/families';
 import { postActivityLog } from '../api/activity';
 import PageLoader from '../components/ui/PageLoader';
 import ErrorState from '../components/ui/ErrorState';
-import Spinner from '../components/ui/Spinner';
 import DemoVideoModal from '../components/DemoVideoModal';
+import { Tooltip } from '../components/Tooltip';
 import QuickStartPanel from '../components/QuickStartPanel';
 import AttachedDocumentsPanel from '../components/AttachedDocumentsPanel';
 import { resolveMediaSrc, resolveAttachmentHref } from '../utils/mediaSrc';
-import { pickDemoVideoRelPath, pickDemoVideoRelPathOrFallback } from '../utils/demoVideoUrl';
+import { pickDemoVideoRelPath, demoVideoTooltipText } from '../utils/demoVideoUrl';
 import { enrichCatalogAssetFromSubmission } from '../utils/enrichCatalogAssetFromSubmission';
 import { useToast } from '../context/ToastContext';
 
@@ -45,7 +44,6 @@ const Detail = () => {
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [ctaBusy, setCtaBusy] = useState(false);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
 
   const load = async () => {
@@ -95,21 +93,20 @@ const Detail = () => {
     load();
   }, [id]);
 
-  const logCta = async (action) => {
+  const logDemoOpened = () => {
     if (!asset?.id) return;
-    setCtaBusy(true);
-    try {
-      await postActivityLog({
-        action,
-        resourceType: 'asset',
-        description: `${asset.id} · ${asset.name}`,
-      });
-      toast.success(action === 'demo_opened' ? 'Demo launch recorded.' : 'Access request recorded.');
-    } catch {
-      toast.error('Could not record this action. Try again.');
-    } finally {
-      setCtaBusy(false);
-    }
+    void (async () => {
+      try {
+        await postActivityLog({
+          action: 'demo_opened',
+          resourceType: 'asset',
+          description: `${asset.id} · ${asset.name}`,
+        });
+        toast.success('Demo launch recorded.');
+      } catch {
+        toast.error('Could not record this action. Try again.');
+      }
+    })();
   };
 
   if (loading) return <PageLoader message="Loading asset…" />;
@@ -121,11 +118,9 @@ const Detail = () => {
     );
   if (!asset) return null;
 
-  const demoVideoSrc = (() => {
-    const raw = pickDemoVideoRelPathOrFallback(asset);
-    return raw ? resolveMediaSrc(raw) : '';
-  })();
-  const hasApiDemoVideo = !!pickDemoVideoRelPath(asset);
+  const demoRaw = pickDemoVideoRelPath(asset);
+  const hasDemoVideo = !!demoRaw;
+  const demoVideoSrc = hasDemoVideo ? resolveMediaSrc(demoRaw) : '';
 
   const familyDisplay = familyRow?.name || asset.family;
   const maturityLabel =
@@ -152,7 +147,7 @@ const Detail = () => {
         <span className="text-text-primary font-medium truncate">{asset.name}</span>
       </nav>
 
-      <div className="card card-hover">
+      <div className="card card-hover overflow-visible">
         <div className="p-4 lg:p-5">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             <div className="flex gap-3 min-w-0">
@@ -179,27 +174,25 @@ const Detail = () => {
               </div>
             </div>
             <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto lg:flex-shrink-0">
-              <button
-                type="button"
-                disabled={ctaBusy}
-                onClick={() => {
-                  setDemoModalOpen(true);
-                  if (hasApiDemoVideo) void logCta('demo_opened');
-                }}
-                className="py-1.5 px-3 rounded-lg border border-border bg-surface text-[12px] font-semibold text-text-secondary inline-flex items-center justify-center gap-1.5 hover:bg-surface-3 focus-ring disabled:opacity-50 shadow-sm"
-              >
-                {ctaBusy ? <Spinner size="sm" /> : <PlayCircle className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                Launch demo
-              </button>
-              <button
-                type="button"
-                disabled={ctaBusy}
-                onClick={() => logCta('access_requested')}
-                className="py-1.5 px-3 btn-primary text-[12px] inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
-              >
-                {ctaBusy ? <Spinner size="sm" color="white" /> : <GitPullRequest className="w-3.5 h-3.5" strokeWidth={1.5} />}
-                Request access
-              </button>
+              <Tooltip placement="bottom" align="end" title={demoVideoTooltipText(asset.name, hasDemoVideo)}>
+                <button
+                  type="button"
+                  disabled={!hasDemoVideo}
+                  onClick={() => {
+                    if (!hasDemoVideo) return;
+                    setDemoModalOpen(true);
+                    logDemoOpened();
+                  }}
+                  className={`py-1.5 px-3 rounded-lg border text-[12px] font-semibold inline-flex items-center justify-center gap-1.5 focus-ring shadow-sm disabled:opacity-60 ${
+                    hasDemoVideo
+                      ? 'border-border bg-surface text-text-secondary hover:bg-surface-3'
+                      : 'border-border bg-surface-muted text-text-muted cursor-not-allowed'
+                  }`}
+                >
+                  <PlayCircle className="w-3.5 h-3.5 shrink-0" strokeWidth={1.5} />
+                  Launch demo
+                </button>
+              </Tooltip>
             </div>
           </div>
 

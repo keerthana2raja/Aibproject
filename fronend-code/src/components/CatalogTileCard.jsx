@@ -7,7 +7,8 @@ import {
   ArrowUpRight,
   PlayCircle,
 } from 'lucide-react';
-import { pickDemoVideoRelPath } from '../utils/demoVideoUrl';
+import { Tooltip } from './Tooltip';
+import { pickDemoVideoRelPath, demoVideoTooltipText } from '../utils/demoVideoUrl';
 
 /** Thin top-edge accent only — L/R/B stay neutral enterprise border */
 export const FAMILY_TOP_ACCENT = {
@@ -111,7 +112,8 @@ export const CatalogTile = ({
       : 'border-border bg-surface-muted text-text-secondary';
 
   const hasDemoVideo = !!pickDemoVideoRelPath(asset);
-  const showDemoBadge = hasDemoVideo || (asset.stats?.demos ?? 0) > 0;
+  const showDemoControl = hasDemoVideo || (asset.stats?.demos ?? 0) > 0;
+  const demoTooltip = demoVideoTooltipText(asset.name, hasDemoVideo);
   const dept = asset.owner || 'Platform catalog';
 
   const handleKeyDown = (e) => {
@@ -128,7 +130,7 @@ export const CatalogTile = ({
       onClick={() => onOpen(asset.id)}
       onKeyDown={handleKeyDown}
       className={`
-        group relative z-0 flex flex-col rounded-xl cursor-pointer bg-surface
+        group relative z-0 flex flex-col overflow-visible rounded-xl cursor-pointer bg-surface
         border border-border shadow-card
         border-t-2 ${topAccent}
         will-change-transform
@@ -145,26 +147,30 @@ export const CatalogTile = ({
             {asset.id}
           </span>
           <div className="flex items-center gap-1.5 shrink-0">
-            {showDemoBadge &&
-              (hasDemoVideo ? (
+            {showDemoControl && (
+              <Tooltip placement="bottom" align="end" title={demoTooltip} className="shrink-0">
                 <button
                   type="button"
+                  disabled={!hasDemoVideo}
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!hasDemoVideo) return;
                     onPlayDemo?.(asset);
                   }}
-                  className={`${tagBase} border-brand-800/32 bg-brand-900/[0.045] text-slate-800 hover:bg-brand-900/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 transition-colors`}
-                  title="Preview demo video"
+                  className={`${tagBase} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 transition-colors ${
+                    hasDemoVideo
+                      ? 'border-brand-800/32 bg-brand-900/[0.045] text-slate-800 hover:bg-brand-900/15'
+                      : 'border-border bg-surface-muted text-text-muted cursor-not-allowed opacity-90 shadow-none'
+                  }`}
                 >
-                  <PlayCircle className="w-3 h-3 text-brand-800/90" strokeWidth={2} />
+                  <PlayCircle
+                    className={`w-3 h-3 shrink-0 ${hasDemoVideo ? 'text-brand-800/90' : 'text-text-muted'}`}
+                    strokeWidth={2}
+                  />
                   Preview
                 </button>
-              ) : (
-                <span className={`${tagBase} border-brand-800/32 bg-brand-900/[0.045] text-slate-800`}>
-                  <PlayCircle className="w-3 h-3 text-brand-800/90" strokeWidth={2} />
-                  Demo
-                </span>
-              ))}
+              </Tooltip>
+            )}
             <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-text-muted opacity-0 group-hover:opacity-100 transition-opacity">
               Open
               <ArrowUpRight className="w-3 h-3" strokeWidth={2} />
@@ -222,9 +228,9 @@ export const CatalogListRow = ({
   maturityLabel,
   cloudLabels,
 }) => (
-  <div
+    <div
     className={`
-      w-full rounded-xl bg-surface flex items-stretch
+      w-full overflow-visible rounded-xl bg-surface flex items-stretch
       border border-border shadow-card
       border-t-2 ${topAccentBorderClass(familyThemeName)}
       transition-[transform,box-shadow,border-top-width] duration-200 ease-out
@@ -259,16 +265,27 @@ export const CatalogListRow = ({
       </div>
       <ArrowUpRight className="w-4 h-4 text-text-muted shrink-0 mt-1 opacity-60" strokeWidth={2} />
     </button>
-    {pickDemoVideoRelPath(asset) ? (
-      <button
-        type="button"
-        onClick={() => onPlayDemo?.(asset)}
-        className="shrink-0 px-3 sm:px-4 border-l border-border flex flex-col items-center justify-center gap-1 text-[10px] font-semibold text-brand-800 bg-surface-muted/40 hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 transition-colors"
-        title="Preview demo video"
-      >
-        <PlayCircle className="w-5 h-5" strokeWidth={1.75} />
-        <span className="hidden sm:inline">Video</span>
-      </button>
-    ) : null}
+    {(() => {
+      const hasVid = !!pickDemoVideoRelPath(asset);
+      const showCtrl = hasVid || (asset.stats?.demos ?? 0) > 0;
+      if (!showCtrl) return null;
+      return (
+        <Tooltip placement="bottom" align="end" title={demoVideoTooltipText(asset.name, hasVid)} className="shrink-0 self-stretch">
+          <button
+            type="button"
+            disabled={!hasVid}
+            onClick={() => hasVid && onPlayDemo?.(asset)}
+            className={`h-full shrink-0 px-3 sm:px-4 border-l border-border flex flex-col items-center justify-center gap-1 text-[10px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 ${
+              hasVid
+                ? 'text-brand-800 bg-surface-muted/40 hover:bg-brand-50'
+                : 'text-text-muted bg-surface-muted/50 cursor-not-allowed opacity-90'
+            }`}
+          >
+            <PlayCircle className="w-5 h-5 shrink-0" strokeWidth={1.75} />
+            <span className="hidden sm:inline">Video</span>
+          </button>
+        </Tooltip>
+      );
+    })()}
   </div>
 );

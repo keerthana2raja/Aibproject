@@ -45,10 +45,10 @@ function resolveUploadedAssetHref(raw) {
 }
 
 const inpErr = 'border-red-300/90 focus:border-red-400 focus:ring-red-500/20';
-const inpFocusPurple =
-  'focus-visible:border-violet-500/80 focus-visible:ring-2 focus-visible:ring-violet-500/20 transition-[border-color,box-shadow] duration-150';
+const inpFocusBrand =
+  'focus-visible:border-brand-500/85 focus-visible:ring-2 focus-visible:ring-brand-500/22 transition-[border-color,box-shadow] duration-150';
 
-const inpClass = (err) => `inp shadow-inner outline-none ${err ? inpErr : inpFocusPurple}`;
+const inpClass = (err) => `inp shadow-inner outline-none ${err ? inpErr : inpFocusBrand}`;
 
 const FieldGroup = ({ label, children, span2, hint, inputId, error }) => (
   <div className={`flex flex-col gap-1.5${span2 ? ' col-span-1 sm:col-span-2' : ''}`}>
@@ -93,7 +93,7 @@ const STEPS = [
 function StepConnector({ rightStep, step }) {
   let bar = 'bg-slate-200';
   if (step > rightStep) bar = 'bg-emerald-500';
-  else if (step === rightStep) bar = 'bg-gradient-to-r from-emerald-500 via-emerald-500/90 to-violet-500';
+  else if (step === rightStep) bar = 'bg-gradient-to-r from-emerald-500 via-emerald-500/90 to-brand-600';
 
   return (
     <div className="flex flex-1 min-w-[8px] min-h-[44px] items-center self-start shrink px-1" aria-hidden>
@@ -117,7 +117,7 @@ function SubmitStepRail({ step, jumpToStep }) {
                 done
                   ? 'border-emerald-600 bg-emerald-500 text-white shadow-[0_0_0_5px_rgba(16,185,129,0.16)]'
                   : current
-                    ? 'border-violet-500 bg-white text-violet-700 shadow-[0_0_0_6px_rgba(139,92,246,0.16)]'
+                    ? 'border-brand-500 bg-white text-brand-700 shadow-[0_0_0_6px_rgba(37,99,235,0.16)]'
                     : 'border-slate-200 bg-slate-50 text-slate-400'
               }`}
             >
@@ -138,7 +138,7 @@ function SubmitStepRail({ step, jumpToStep }) {
           <>
             <span
               className={`mt-2 text-center text-[11px] font-semibold leading-tight tracking-tight ${
-                done ? 'text-emerald-700' : current ? 'text-violet-700' : 'text-slate-500'
+                done ? 'text-emerald-700' : current ? 'text-brand-700' : 'text-slate-500'
               }`}
             >
               {s.title}
@@ -682,7 +682,7 @@ const Submit = () => {
             <div className="flex items-center gap-3 mt-3 max-w-xl" aria-live="polite">
               <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden shadow-inner ring-1 ring-black/[0.04] dark:ring-white/[0.06]">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-violet-500 to-violet-600 shadow-sm transition-[width] duration-500 ease-out motion-reduce:transition-none"
+                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 via-brand-500 to-brand-700 shadow-sm transition-[width] duration-500 ease-out motion-reduce:transition-none"
                   style={{ width: `${progressPct}%` }}
                 />
               </div>
@@ -709,7 +709,7 @@ const Submit = () => {
                 How this accelerator will appear to reviewers.
               </p>
             </div>
-            <span className="pill ml-auto">Step 1 of 3</span>
+            <span className="pill ml-auto border-brand-200/70 bg-brand-50 text-brand-800">Step 1 of 3</span>
           </div>
 
           <div className="p-4 sm:p-6">
@@ -906,7 +906,7 @@ const Submit = () => {
                 Platform alignment and where the code lives.
               </p>
             </div>
-            <span className="pill ml-auto">Step 2 of 3</span>
+            <span className="pill ml-auto border-brand-200/70 bg-brand-50 text-brand-800">Step 2 of 3</span>
           </div>
 
           <div className="p-4 sm:p-6">
@@ -1026,7 +1026,7 @@ const Submit = () => {
                 Confirm details and accept the declaration to send to the queue.
               </p>
             </div>
-            <span className="pill ml-auto">Step 3 of 3</span>
+            <span className="pill ml-auto border-brand-200/70 bg-brand-50 text-brand-800">Step 3 of 3</span>
           </div>
 
           <div className="p-4 sm:p-6">
