@@ -14,12 +14,10 @@ export function pickDemoVideoRelPath(record) {
   return String(v).trim();
 }
 
-/** Shown only when API omits a demo URL — short CC0 clip. */
-export const FALLBACK_DEMO_VIDEO_URL =
-  'https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4';
-
-export function pickDemoVideoRelPathOrFallback(record) {
-  const fromApi = pickDemoVideoRelPath(record);
-  if (fromApi) return fromApi;
-  return FALLBACK_DEMO_VIDEO_URL;
+/** Hover / tooltip copy for Launch demo / Preview controls. */
+export function demoVideoTooltipText(assetDisplayName, hasVideoUrl) {
+  const safe = String(assetDisplayName ?? '').trim();
+  const label = safe || 'This asset';
+  if (hasVideoUrl) return `${label} demo video`;
+  return 'Demo video not available';
 }

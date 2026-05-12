@@ -24,7 +24,7 @@ const NavItem = ({ to, icon: Icon, label, badge, exact, onClick, collapsed }) =>
       `group flex items-center gap-3 rounded-lg mx-2 px-3 py-2 text-[13px] font-medium transition-all duration-150 relative border-l-2
        ${
         isActive
-          ? 'bg-shell-nav-active-bg text-shell-nav border-l-shell-nav-active-border shadow-sm'
+          ? 'bg-brand-50 text-brand-900 border-l-brand-600 shadow-sm'
           : 'border-l-transparent text-shell-nav-muted hover:bg-shell-sidebar-hover hover:text-shell-nav'
        }
        ${collapsed ? 'justify-center mx-1.5 px-0 w-10 py-2.5' : ''}

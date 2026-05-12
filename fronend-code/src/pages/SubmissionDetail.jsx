@@ -21,8 +21,16 @@ import AttachedDocumentsPanel from '../components/AttachedDocumentsPanel';
 import { useToast } from '../context/ToastContext';
 import { PIPELINE_STATUS_META } from '../theme/enterpriseMeta';
 import { resolveMediaSrc, resolveAttachmentHref } from '../utils/mediaSrc';
-import { pickDemoVideoRelPathOrFallback } from '../utils/demoVideoUrl';
+import { pickDemoVideoRelPath, demoVideoTooltipText } from '../utils/demoVideoUrl';
+import { Tooltip } from '../components/Tooltip';
 import { normalizeSubmissionDetail } from '../utils/submissionApiNormalize';
+
+/** Governance actions not wired server-side yet; flip each to false when `updateSubmissionStatus` supports it. */
+const APPROVE_ACTION_UNAVAILABLE = true;
+const REMEDIATION_ACTION_UNAVAILABLE = true;
+
+const governanceBtnDisabledClass =
+  'border-border bg-surface-muted text-text-muted cursor-not-allowed shadow-none opacity-90';
 
 const StatusBadge = ({ status }) => {
   const cfg = PIPELINE_STATUS_META[status] || { label: status };
@@ -96,10 +104,9 @@ const SubmissionDetail = () => {
     );
 
   const canAct = submission.status === 'governance';
-  const demoSrc = (() => {
-    const raw = pickDemoVideoRelPathOrFallback(submission);
-    return raw ? resolveMediaSrc(raw) : '';
-  })();
+  const demoRaw = pickDemoVideoRelPath(submission);
+  const hasDemoVideo = !!demoRaw;
+  const demoSrc = hasDemoVideo ? resolveMediaSrc(demoRaw) : '';
   const attachments = submission.submissionAttachments || [];
   const quickStartText = String(submission.quickStart || '').trim();
 
@@ -178,18 +185,28 @@ const SubmissionDetail = () => {
 
           <QuickStartPanel text={quickStartText} />
 
-          <section className="card card-hover p-4">
+          <section className="card card-hover overflow-visible p-4">
             <div className="text-[9px] font-semibold text-text-muted uppercase tracking-wide mb-2">
               Demo video
             </div>
-            <button
-              type="button"
-              onClick={() => setDemoOpen(true)}
-              className="py-2 px-3 rounded-lg border border-brand bg-brand/10 text-brand text-[12px] font-semibold hover:bg-brand/15 inline-flex items-center gap-2 transition-colors duration-180 focus-ring shadow-sm"
-            >
-              <PlayCircle className="w-4 h-4 text-brand shrink-0" strokeWidth={1.75} />
-              Launch demo
-            </button>
+            <Tooltip placement="bottom" align="start" title={demoVideoTooltipText(submission.name, hasDemoVideo)}>
+              <button
+                type="button"
+                disabled={!hasDemoVideo}
+                onClick={() => hasDemoVideo && setDemoOpen(true)}
+                className={`py-2 px-3 rounded-lg border text-[12px] font-semibold inline-flex items-center gap-2 transition-colors duration-180 focus-ring shadow-sm ${
+                  hasDemoVideo
+                    ? 'border-brand bg-brand/10 text-brand hover:bg-brand/15'
+                    : 'border-border bg-surface-muted text-text-muted cursor-not-allowed opacity-90 shadow-none'
+                }`}
+              >
+                <PlayCircle
+                  className={`w-4 h-4 shrink-0 ${hasDemoVideo ? 'text-brand' : 'text-text-muted'}`}
+                  strokeWidth={1.75}
+                />
+                Launch demo
+              </button>
+            </Tooltip>
           </section>
 
           <AttachedDocumentsPanel
@@ -329,21 +346,47 @@ const SubmissionDetail = () => {
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
-                  onClick={() => handleAction('approved')}
-                  disabled={!!actionLoading}
-                  className="py-1.5 px-3 rounded-lg border border-brand bg-brand text-white text-[12px] font-semibold hover:bg-brand-hover active:bg-brand-active disabled:opacity-50 inline-flex items-center gap-2 shadow-enterprise transition-colors duration-180 focus-ring"
+                  {...(APPROVE_ACTION_UNAVAILABLE
+                    ? { disabled: true }
+                    : { onClick: () => handleAction('approved'), disabled: !!actionLoading })}
+                  title={
+                    APPROVE_ACTION_UNAVAILABLE
+                      ? 'Approve will be enabled when governance approval is integrated.'
+                      : undefined
+                  }
+                  className={`py-1.5 px-3 rounded-lg border text-[12px] font-semibold inline-flex items-center gap-2 transition-colors duration-180 focus-ring ${
+                    APPROVE_ACTION_UNAVAILABLE
+                      ? governanceBtnDisabledClass
+                      : 'border-brand bg-brand text-white hover:bg-brand-hover active:bg-brand-active disabled:opacity-50 shadow-enterprise'
+                  }`}
                 >
-                  {actionLoading === 'approved' ? <Spinner size="sm" color="white" /> : null}
-                  Approve
+                  {!APPROVE_ACTION_UNAVAILABLE && actionLoading === 'approved' ? (
+                    <Spinner size="sm" color="white" />
+                  ) : null}
+                  {APPROVE_ACTION_UNAVAILABLE ? 'Approve (coming soon)' : 'Approve'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleAction('remediation')}
-                  disabled={!!actionLoading}
-                  className="py-1.5 px-3 rounded-lg border border-border-mid bg-surface text-text-primary text-[12px] font-semibold hover:bg-brand-muted hover:border-brand-muted-border disabled:opacity-50 inline-flex items-center gap-2 transition-colors duration-180 focus-ring"
+                  {...(REMEDIATION_ACTION_UNAVAILABLE
+                    ? { disabled: true }
+                    : { onClick: () => handleAction('remediation'), disabled: !!actionLoading })}
+                  title={
+                    REMEDIATION_ACTION_UNAVAILABLE
+                      ? 'Request remediation will be enabled when governance actions are integrated.'
+                      : undefined
+                  }
+                  className={`py-1.5 px-3 rounded-lg border text-[12px] font-semibold inline-flex items-center gap-2 transition-colors duration-180 focus-ring ${
+                    REMEDIATION_ACTION_UNAVAILABLE
+                      ? governanceBtnDisabledClass
+                      : 'border-border-mid bg-surface text-text-primary hover:bg-brand-muted hover:border-brand-muted-border disabled:opacity-50'
+                  }`}
                 >
-                  {actionLoading === 'remediation' ? <Spinner size="sm" color="muted" /> : null}
-                  Request remediation
+                  {!REMEDIATION_ACTION_UNAVAILABLE && actionLoading === 'remediation' ? (
+                    <Spinner size="sm" color="muted" />
+                  ) : null}
+                  {REMEDIATION_ACTION_UNAVAILABLE
+                    ? 'Request remediation (coming soon)'
+                    : 'Request remediation'}
                 </button>
               </div>
             </section>
