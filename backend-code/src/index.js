@@ -3,25 +3,21 @@ const connectDB = require("./config/db");
 
 const PORT = Number(process.env.PORT) || 5000;
 
-let appReady = null;
-
-const getApp = async () => {
-  if (!appReady) {
-    await connectDB();
-    appReady = require("./app");
-  }
-  return appReady;
-};
+// B1 FIX: connectDB() is called at module-level so it runs ONCE per container
+// lifetime, not inside the request handler where it would reconnect on every
+// cold start.
+const dbReady = connectDB();
+const app = require("./app");
 
 // Vercel serverless export
 module.exports = async (req, res) => {
-  const app = await getApp();
+  await dbReady; // resolves instantly after the first cold-start
   return app(req, res);
 };
 
 if (require.main === module) {
-  getApp()
-    .then((app) => {
+  dbReady
+    .then(() => {
       app.listen(PORT, () => {
         console.log(`🚀 AIMPLIFY API running at http://localhost:${PORT}/v1`);
         console.log(`📋 Health: http://localhost:${PORT}/v1/health`);

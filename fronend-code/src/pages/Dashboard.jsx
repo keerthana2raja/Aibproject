@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   ArrowUpRight,
@@ -170,6 +170,10 @@ const PlatformFamilyTiles = ({ families = [], onOpen, skeleton }) => {
   );
 };
 
+// How long (ms) cached dashboard data is considered fresh before a real
+// re-fetch is allowed.  Matches the server-side TTL (B2 fix).
+const DASHBOARD_CACHE_TTL = 30_000;
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -180,7 +184,17 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const load = useCallback(async () => {
+  // F1 FIX: Track when data was last successfully fetched so that route
+  // changes (location.key) don't trigger 3 parallel DB calls every time the
+  // user navigates back to the dashboard within the TTL window.
+  const lastFetchedAt = useRef(null);
+
+  const load = useCallback(async (force = false) => {
+    // Skip if fresh data is already in state and a forced refresh wasn't requested
+    if (!force && lastFetchedAt.current && Date.now() - lastFetchedAt.current < DASHBOARD_CACHE_TTL) {
+      return;
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -194,6 +208,8 @@ const Dashboard = () => {
       setStats(statsRes?.data?.data ?? {});
       setPopular(Array.isArray(rawPopular) ? rawPopular : []);
       setActivity(Array.isArray(rawActivity) ? rawActivity : []);
+      // Record successful fetch time
+      lastFetchedAt.current = Date.now();
     } catch (e) {
       setError(e.response?.data?.message || 'Failed to load dashboard data.');
     } finally {
@@ -206,7 +222,9 @@ const Dashboard = () => {
   }, [load, location.key]);
 
   useEffect(() => {
-    const onRefresh = () => load();
+    // Force-refresh when an explicit refresh event is fired (e.g. after an
+    // upload completes), bypassing the TTL guard.
+    const onRefresh = () => load(true);
     window.addEventListener('aimplify:dashboard-refresh', onRefresh);
     return () => window.removeEventListener('aimplify:dashboard-refresh', onRefresh);
   }, [load]);
@@ -276,7 +294,7 @@ const Dashboard = () => {
   if (error) {
     return (
       <div className="flex-1 flex items-center justify-center p-4">
-        <ErrorState message={error} onRetry={load} />
+        <ErrorState message={error} onRetry={() => load(true)} />
       </div>
     );
   }

@@ -212,11 +212,22 @@ const SubmissionDetail = () => {
 
       if (sub.promotedAssetId) {
         try {
-          const assetRes = await getAssetById(sub.promotedAssetId);
+          // F2 FIX: Run getAssetById and getFamilyByKey in parallel now that
+          // the family key is already known from the submission object.
+          // Previously the three calls ran sequentially:
+          //   getAssetById → enrichCatalogAsset → getFamilyByKey
+          const [assetRes, initialFamilyRes] = await Promise.all([
+            getAssetById(sub.promotedAssetId),
+            sub.family
+              ? getFamilyByKey(sub.family).catch(() => null)
+              : Promise.resolve(null),
+          ]);
           const raw = assetRes.data.data;
           const enriched = await enrichCatalogAssetFromSubmission(raw);
           setAsset(enriched);
-          if (enriched?.family) {
+          // If the enriched asset's family differs from the submission's family
+          // (rare), re-fetch the correct row; otherwise reuse the parallel result.
+          if (enriched?.family && enriched.family !== sub.family) {
             try {
               const fr = await getFamilyByKey(enriched.family);
               setFamilyRow(fr.data?.data ?? null);
@@ -224,7 +235,7 @@ const SubmissionDetail = () => {
               setFamilyRow(null);
             }
           } else {
-            setFamilyRow(null);
+            setFamilyRow(initialFamilyRes?.data?.data ?? null);
           }
         } catch {
           setAsset(null);
