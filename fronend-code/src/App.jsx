@@ -7,7 +7,6 @@ import AppLayout from './layouts/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Catalogue from './pages/Catalogue';
 import AddCatalogue from './pages/AddCatalogue';
-import Detail from './pages/Detail';
 import Submit from './pages/Submit';
 import Pipeline from './pages/Pipeline';
 import Analytics from './pages/Analytics';
@@ -44,7 +43,7 @@ function App() {
           <Route path="catalog" element={<Catalogue />} />
           <Route path="catalog/new" element={<AddCatalogue />} />
           <Route path="family/:id" element={<FamilyDetail />} />
-          <Route path="detail/:id" element={<Detail />} />
+          <Route path="detail/:id" element={<SubmissionDetail />} />
           <Route path="submit"     element={<Submit />} />
           <Route path="pipeline"   element={<Pipeline />} />
           <Route path="pipeline/:id" element={<SubmissionDetail />} />

@@ -7,6 +7,7 @@ import EmptyState from '../components/ui/EmptyState';
 import ErrorState from '../components/ui/ErrorState';
 import { PIPELINE_STATUS_META } from '../theme/enterpriseMeta';
 import { PipelineProgress } from '../components/PipelineProgress';
+import { Tooltip } from '../components/Tooltip';
 
 const STATUS_PILL = {
   'ai-review': 'border-sky-200 bg-sky-50 text-sky-900',
@@ -102,15 +103,16 @@ const Pipeline = () => {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <button
-            type="button"
-            onClick={load}
-            className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-border bg-surface text-text-muted hover:bg-surface-muted shadow-sm focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
-            title="Refresh"
-            aria-label="Refresh"
-          >
-            <RefreshCw className="w-4 h-4" strokeWidth={1.75} />
-          </button>
+          <Tooltip title="Refresh" subtitle="Reload submissions from the server" placement="bottom" align="center" className="inline-flex">
+            <button
+              type="button"
+              onClick={load}
+              className="h-9 w-9 inline-flex items-center justify-center rounded-xl border border-border bg-surface text-text-muted hover:bg-surface-muted shadow-sm focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2"
+              aria-label="Refresh"
+            >
+              <RefreshCw className="w-4 h-4" strokeWidth={1.75} />
+            </button>
+          </Tooltip>
           <button
             type="button"
             onClick={() => navigate('/submit')}

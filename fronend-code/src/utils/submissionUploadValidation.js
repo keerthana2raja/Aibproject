@@ -65,14 +65,39 @@ export function validateArchitectureDiagramFile(file) {
 /** @param {File[]} files */
 export function validateAttachmentFiles(files) {
   if (!files?.length) return { ok: true };
+  const over = [];
   for (const file of files) {
     if (!file) continue;
     if (file.size > ATTACHMENT_MAX_BYTES_PER_FILE) {
-      return {
-        ok: false,
-        message: `Each attachment must be at most 40 MB (“${file.name}” is ${formatSizeMb(file.size)}).`,
-      };
+      over.push(`“${file.name}” (${formatSizeMb(file.size)})`);
     }
   }
+  if (over.length) {
+    return {
+      ok: false,
+      message:
+        over.length === 1
+          ? `Each attachment must be at most 40 MB. This file exceeds the limit: ${over[0]}.`
+          : `Each attachment must be at most 40 MB. Over limit: ${over.join('; ')}.`,
+    };
+  }
   return { ok: true };
+}
+
+/** Runs all submission file checks; optional files are skipped when null/empty. */
+export function validateAllSubmissionUploads(demoVideoFile, architectureFile, supportingFiles) {
+  const demo = validateDemoVideoFile(demoVideoFile);
+  const arch = validateArchitectureDiagramFile(architectureFile);
+  const att = validateAttachmentFiles(supportingFiles);
+  const messages = [];
+  if (!demo.ok) messages.push(demo.message);
+  if (!arch.ok) messages.push(arch.message);
+  if (!att.ok) messages.push(att.message);
+  return {
+    ok: demo.ok && arch.ok && att.ok,
+    demo,
+    arch,
+    att,
+    messages,
+  };
 }
