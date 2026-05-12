@@ -28,6 +28,7 @@ app.use(
       /\.vercel\.app$/,
       "https://amplify.infovision.io",
       "https://www.amplify.infovision.io",
+      "https://aimplify.infovision.io/",
     ],
     credentials: true,
   }),

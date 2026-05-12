@@ -1,540 +1,748 @@
-const mongoose = require("mongoose");
 require("dotenv").config();
+const { createClient } = require("@libsql/client");
+const { put } = require("@vercel/blob");
+const fs = require("fs");
+const path = require("path");
+const os = require("os");
+const ffmpeg = require("fluent-ffmpeg");
+const ffmpegPath = require("ffmpeg-static");
+ffmpeg.setFfmpegPath(ffmpegPath);
 
-// ── Models ────────────────────────────────────────────────────────────────────
-const familySchema = new mongoose.Schema(
-  {
-    key: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-      enum: ["atlas", "forge", "relay", "sentinel", "nexus"],
-    },
-    name: { type: String, required: true, trim: true },
-    tagline: { type: String, trim: true },
-    longDesc: { type: String },
-    useCases: [{ type: String }],
-    solutions: [{ type: String }],
-    dependsOn: [{ type: String }],
-    enables: [{ type: String }],
-    stats: {
-      assets: { type: Number, default: 0 },
-      deploys: { type: Number, default: 0 },
-      battleTested: { type: Number, default: 0 },
-    },
-  },
-  { timestamps: true },
-);
+// ─── Config ───────────────────────────────────────────────────────────────────
+const MAX_VIDEO_MB = 50;  // compress any video larger than this
 
-const assetSchema = new mongoose.Schema(
-  {
-    id: {
-      type: String,
-      required: true,
-      unique: true,
-      uppercase: true,
-      trim: true,
-    },
-    name: { type: String, required: true, trim: true },
-    desc: { type: String, trim: true },
-    family: {
-      type: String,
-      required: true,
-      enum: ["atlas", "forge", "relay", "sentinel", "nexus"],
-    },
-    clouds: [{ type: String, enum: ["aws", "gcp", "azure"] }],
-    maturity: {
-      type: String,
-      enum: ["experimental", "validated", "battle-tested"],
-      default: "experimental",
-    },
-    effort: { type: String, trim: true },
-    demoReady: { type: Boolean, default: false },
-    solution: { type: String, trim: true },
-    owner: { type: String, trim: true },
-    ownerInitials: { type: String, trim: true },
-    architecture: { type: String, trim: true },
-    quickStart: { type: String },
-    prerequisites: [{ type: String }],
-    tags: [{ type: String }],
-    changelog: [{ type: String }],
-    stats: {
-      deploys: { type: Number, default: 0 },
-      stars: { type: Number, default: 0 },
-    },
-  },
-  { timestamps: true },
-);
+if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
+  console.error("❌ TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be set in .env");
+  process.exit(1);
+}
 
-const Family = mongoose.model("Family", familySchema);
-const Asset = mongoose.model("Asset", assetSchema);
+const BLOB_TOKEN =
+  process.env.BLOB_PUBLIC_READ_WRITE_TOKEN ||
+  process.env.BLOB_READ_WRITE_TOKEN;
 
-// ── Seed Data ─────────────────────────────────────────────────────────────────
-const families = [
-  {
-    key: "atlas",
-    name: "Atlas",
-    tagline: "Foundation layer for all AI initiatives",
-    longDesc:
-      "Atlas provides the foundational data infrastructure and AI scaffolding that all other families depend on. It covers everything from data lake modernisation to BI migration and synthetic data generation — the bedrock every AI initiative is built upon.",
-    useCases: [
-      "Data lake modernisation",
-      "BI tool migration (Tableau → Looker)",
-      "Synthetic data generation for testing",
-      "Data cataloguing and governance",
-    ],
-    solutions: ["Data Migration", "Data Quality", "Data Platform"],
-    dependsOn: [],
-    enables: ["forge", "relay", "sentinel", "nexus"],
-    stats: { assets: 3, deploys: 451, battleTested: 2 },
-  },
-  {
-    key: "forge",
-    name: "Forge",
-    tagline: "Build and ship AI models faster",
-    longDesc:
-      "Forge accelerates the development, fine-tuning, and deployment of AI and LLM-powered applications. From prompt libraries and RAG pipelines to full model fine-tuning accelerators, Forge is where AI products are built.",
-    useCases: [
-      "LLM application development",
-      "RAG system construction",
-      "Prompt engineering and management",
-      "Domain-specific model fine-tuning",
-    ],
-    solutions: ["Knowledge AI", "Prompt Engineering", "Model Development"],
-    dependsOn: ["atlas"],
-    enables: ["relay", "nexus"],
-    stats: { assets: 3, deploys: 732, battleTested: 2 },
-  },
-  {
-    key: "relay",
-    name: "Relay",
-    tagline: "Connect everything, integrate anywhere",
-    longDesc:
-      "Relay handles all integration, streaming, and API orchestration needs for AI-powered systems. It bridges internal services, third-party APIs, and real-time data streams so AI models always have access to what they need.",
-    useCases: [
-      "API gateway setup for AI services",
-      "Real-time event streaming",
-      "LLM proxy routing and load balancing",
-      "Multi-system integration",
-    ],
-    solutions: ["Integration", "Data Streaming"],
-    dependsOn: ["atlas"],
-    enables: ["sentinel", "nexus"],
-    stats: { assets: 2, deploys: 273, battleTested: 1 },
-  },
-  {
-    key: "sentinel",
-    name: "Sentinel",
-    tagline: "Govern, protect, and monitor AI",
-    longDesc:
-      "Sentinel provides governance, privacy, and monitoring capabilities to keep AI systems safe, fair, and compliant. It covers PII redaction, bias detection, model drift monitoring, and regulatory compliance reporting.",
-    useCases: [
-      "AI bias and fairness monitoring",
-      "PII detection and redaction",
-      "Regulatory compliance reporting (GDPR, EU AI Act)",
-      "Model drift and anomaly alerts",
-    ],
-    solutions: ["AI Governance", "Data Privacy"],
-    dependsOn: ["atlas", "forge"],
-    enables: ["nexus"],
-    stats: { assets: 2, deploys: 271, battleTested: 1 },
-  },
-  {
-    key: "nexus",
-    name: "Nexus",
-    tagline: "Operate AI at scale, optimise costs",
-    longDesc:
-      "Nexus provides MLOps and operational tooling to deploy, monitor, and optimise AI workloads in production. It ties together all other families — enabling teams to run AI at scale while keeping infrastructure costs under control.",
-    useCases: [
-      "End-to-end MLOps pipeline setup",
-      "LLM cost optimisation and routing",
-      "Model lifecycle and registry management",
-      "Automated retraining and deployment",
-    ],
-    solutions: ["MLOps", "Cost Management"],
-    dependsOn: ["atlas", "forge", "relay", "sentinel"],
-    enables: [],
-    stats: { assets: 2, deploys: 146, battleTested: 0 },
-  },
+if (!BLOB_TOKEN) {
+  console.error("❌ BLOB_PUBLIC_READ_WRITE_TOKEN or BLOB_READ_WRITE_TOKEN must be set in .env");
+  process.exit(1);
+}
+
+const db = createClient({
+  url: process.env.TURSO_DATABASE_URL,
+  authToken: process.env.TURSO_AUTH_TOKEN.trim(),
+  intMode: "number",
+});
+
+// Local folder that contains DataSmith.mp4, MultiagentDemo.mp4, etc.
+const MEDIA_DIR = path.join(__dirname, "Videos and Screenshots");
+
+// ─── Blob uploader ────────────────────────────────────────────────────────────
+// Reads the file from MEDIA_DIR, uploads to Vercel Blob, returns public URL.
+// Returns "" if the filename is empty or the file doesn't exist locally.
+async function uploadMediaToBlob(filename, blobFolder, id, existingUrl = "") {
+  if (!filename || !filename.trim()) return "";
+  if (/^https?:\/\//i.test(filename)) return filename; // already a URL
+  // ✅ Skip upload if DB already has a valid blob URL for this asset
+  if (existingUrl && /^https?:\/\//i.test(existingUrl)) {
+    console.log(`   ⏭️  Reusing existing blob URL for ${filename}`);
+    return existingUrl;
+  }
+
+  let localPath = path.join(MEDIA_DIR, filename);
+  if (!fs.existsSync(localPath)) {
+    console.warn(`   ⚠️  Not found, skipping: ${localPath}`);
+    return "";
+  }
+
+  const ext = path.extname(filename).toLowerCase();
+  const mimeMap = {
+    ".mp4": "video/mp4", ".mov": "video/quicktime", ".webm": "video/webm",
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+  };
+  const contentType = mimeMap[ext] || "application/octet-stream";
+
+  // ─── Auto-compress large videos before upload ──────────────────────────────
+  const isVideo = [".mp4", ".mov", ".webm"].includes(ext);
+  if (isVideo) {
+    const sizeMB = fs.statSync(localPath).size / (1024 * 1024);
+    if (sizeMB > MAX_VIDEO_MB) {
+      console.log(`   🗜️  ${filename} is ${sizeMB.toFixed(1)} MB > ${MAX_VIDEO_MB} MB — compressing...`);
+      const tmpPath = path.join(os.tmpdir(), `compressed-${id}-${Date.now()}${ext}`);
+      try {
+        await new Promise((resolve, reject) => {
+          ffmpeg(localPath)
+            .videoCodec("libx264")
+            .audioCodec("aac")
+            .audioBitrate("96k")
+            .outputOptions(["-crf 28", "-preset fast", "-vf scale=1280:-2"])
+            .on("end", resolve)
+            .on("error", reject)
+            .save(tmpPath);
+        });
+        const newMB = fs.statSync(tmpPath).size / (1024 * 1024);
+        console.log(`   ✅ Compressed: ${sizeMB.toFixed(1)} MB → ${newMB.toFixed(1)} MB`);
+        localPath = tmpPath;
+      } catch (e) {
+        console.warn(`   ⚠️  Compression failed, uploading original. Error: ${e.message}`);
+      }
+    } else {
+      console.log(`   📏 ${filename} is ${sizeMB.toFixed(1)} MB — no compression needed`);
+    }
+  }
+
+  const baseName = path.basename(filename, ext).replace(/\s+/g, "-").replace(/[^a-zA-Z0-9_-]/g, "");
+  const blobPathname = `${blobFolder}/${id}-${baseName}-${Date.now()}${ext}`;
+
+  console.log(`   📤 Uploading ${filename} → ${blobPathname}`);
+  const buffer = fs.readFileSync(localPath);
+  const { url } = await put(blobPathname, buffer, {
+    access: "public",
+    token: BLOB_TOKEN,
+    contentType,
+  });
+  console.log(`   ✅ ${url}`);
+  return url;
+}
+
+// ─── Schema guard ─────────────────────────────────────────────────────────────
+async function columnExists(table, col) {
+  const r = await db.execute(`PRAGMA table_info(${table})`);
+  return r.rows.some((row) => row.name === col);
+}
+async function addCol(table, col, def) {
+  if (!(await columnExists(table, col))) {
+    await db.execute(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`);
+    console.log(`   ➕ Added ${table}.${col}`);
+  }
+}
+
+// ─── Seed data ────────────────────────────────────────────────────────────────
+
+const FAMILIES = [
+  ["atlas",   "Atlas",    "Data & Context Platform",            "Accelerators that make data AI-ready across lakehouse and operational stores.",  '["Lakehouse","Governance","Lineage"]',       '["Foundation sprints"]',        '["Cloud landing zones"]', '["All agent families"]'],
+  ["forge",   "Forge",    "AI-Native Engineering Platform",     "Prompts, scaffolds, and quality loops for accelerated delivery.",               '["Shipping velocity","Reuse"]',              '["Software factory programs"]', '["Git providers"]',       '["Relay & Nexus"]'],
+  ["relay",   "Relay",    "Workflow & Agent Platform",          "Agents and workflows for operations, docs, service, and document AI.",          '["Operational efficiency"]',                '["CS programmes"]',             '["CRM & ITSM"]',          '["Governed execution"]'],
+  ["sentinel","Sentinel", "Governed Runtime & Managed AI Ops",  "Safety, telemetry, compliance, and cost guardrails.",                          '["Responsible AI"]',                        '["GRC workflows"]',             '["IAM & KMS"]',           '["Production AI"]'],
+  ["nexus",   "Nexus",    "Shared Platform Infrastructure",     "Shared networking, orchestration, and infra glue.",                            '["Platforms"]',                             '["Landing zones"]',             '["Identity"]',            '["Atlas & Forge workloads"]'],
 ];
 
-const assets = [
-  // ── ATLAS ──────────────────────────────────────────────────────────────────
+// Every field that exists in the assets table — demo_video (filename) is
+// resolved to a blob URL at seed time and stored in demo_video_relpath.
+const ASSETS = [
   {
     id: "ATL-001",
     name: "DataSmith – Tableau to Looker Migration",
-    desc: "Automates end-to-end migration of Tableau workbooks to Looker dashboards, preserving logic, filters, and calculations.",
     family: "atlas",
-    clouds: ["aws", "gcp"],
-    maturity: "battle-tested",
-    effort: "2 weeks",
-    demoReady: true,
-    solution: "Data Migration",
-    owner: "Priya Sharma",
-    ownerInitials: "PS",
-    architecture: "https://storage.aimplify.infovision.com/arch/atl-001.png",
-    quickStart:
-      "git clone https://github.com/infovision/datasmith-migrator\ncd datasmith-migrator\npip install -r requirements.txt\npython migrate.py --source tableau_workbook.twbx --target looker",
-    prerequisites: [
-      "Python 3.11+",
-      "Tableau Desktop API key",
-      "Looker SDK credentials",
-      "GCP service account",
-    ],
-    tags: ["tableau", "looker", "migration", "bi", "data-engineering", "atlas"],
-    changelog: [
-      "v2.1.0 - Added support for LOD expressions",
-      "v2.0.0 - Multi-dashboard batch migration",
-      "v1.5.0 - Looker LookML auto-generation",
-    ],
-    stats: { deploys: 142, stars: 87 },
+    solution: "Migration Factory",
+    desc: "Discovery, Migration and Validation of Tableau dashboards to Looker",
+    long_desc: "Discovery - Lineage analysis, schema analysis, cluster analysis",
+    maturity: "experimental", effort: "low", demoReady: 1,
+    clouds: '["azure"]',
+    tags: '["Tableau","Looker","DataSmith","Migration","Agentic AI"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "datasmith.infovision.io",
+    owner: "Manikandan Loganathan", ownerInitials: "ML",
+    ownerEmail: "Manikandan.Loganathan@infovision.com",
+    prerequisites: '["Hosted service"]',
+    stats_deploys: 0, stats_demos: 2, stats_projects: 0, stats_rating: null,
+    demo_video: "DataSmith.mp4",
   },
   {
     id: "ATL-002",
     name: "DataSmith – Synthetic Data Generator",
-    desc: "Generates statistically accurate synthetic datasets for testing and development, supporting PII masking and schema inference.",
     family: "atlas",
-    clouds: ["aws", "azure", "gcp"],
-    maturity: "validated",
-    effort: "3 days",
-    demoReady: true,
-    solution: "Data Quality",
-    owner: "Arjun Mehta",
-    ownerInitials: "AM",
-    architecture: "https://storage.aimplify.infovision.com/arch/atl-002.png",
-    quickStart:
-      "pip install datasmith-synth\ndatasmith generate --schema schema.json --rows 10000 --output output.csv",
-    prerequisites: ["Python 3.10+", "Input schema JSON or sample CSV"],
-    tags: ["synthetic-data", "pii", "data-masking", "testing", "atlas"],
-    changelog: [
-      "v1.3.0 - Time-series data support",
-      "v1.2.0 - PII auto-detection",
-      "v1.0.0 - Initial release",
-    ],
-    stats: { deploys: 98, stars: 64 },
+    solution: "Master Data & Domain Context",
+    desc: "Generates tens to millions of rows of synthetic data statistically modelled on a given input dataset",
+    long_desc: "Generates tens to millions of rows of synthetic data statistically modelled on a given input dataset",
+    maturity: "validated", effort: "low", demoReady: 1,
+    clouds: '[]',
+    tags: '["Data Generator","Data Generation","DataSmith"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Manikandan Loganathan", ownerInitials: "ML",
+    ownerEmail: "Manikandan.Loganathan@infovision.com",
+    prerequisites: '["Hosted service"]',
+    stats_deploys: 0, stats_demos: 4, stats_projects: 1, stats_rating: 50,
+    demo_video: "SyntheticDataGenerator.mp4",
   },
   {
     id: "ATL-003",
-    name: "Data Lake Accelerator",
-    desc: "Bootstraps a production-ready data lake with automated ingestion pipelines, cataloguing, and governance controls.",
+    name: "Data Policy Anomaly Bot",
     family: "atlas",
-    clouds: ["aws", "gcp"],
-    maturity: "battle-tested",
-    effort: "4 weeks",
-    demoReady: false,
-    solution: "Data Platform",
-    owner: "Keerthana Rajendran",
-    ownerInitials: "KR",
-    architecture: "https://storage.aimplify.infovision.com/arch/atl-003.png",
-    quickStart: "terraform init\nterraform apply -var-file=config.tfvars",
-    prerequisites: [
-      "Terraform 1.5+",
-      "AWS or GCP credentials",
-      "S3 / GCS bucket permissions",
-    ],
-    tags: ["data-lake", "terraform", "ingestion", "cataloguing", "atlas"],
-    changelog: [
-      "v3.0.0 - Added Glue + Dataplex support",
-      "v2.5.0 - Auto-schema detection",
-      "v2.0.0 - Multi-cloud support",
-    ],
-    stats: { deploys: 211, stars: 134 },
+    solution: "Master Data & Domain Context",
+    desc: "Natural language compliance bot that validates organisational policies against live BigQuery datasets and flags anomalies by risk severity.",
+    long_desc: "The Data Policy Anomaly Bot is an AI-powered compliance accelerator that enables non-technical users to query organisational policies in plain English and validate them against live datasets in real time.",
+    maturity: "validated", effort: "medium", demoReady: 1,
+    clouds: '["azure","gcp"]',
+    tags: '["Compliance","Policy Governance","Anomaly Detection","BigQuery","GDPR","CCPA","LangChain","GPT-4","Vector Embeddings","Risk Classification"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Abhiram Kalidindi", ownerInitials: "AK",
+    ownerEmail: "Abhiram.Kalidindi@infovision.com",
+    prerequisites: '["Python 3.x","Streamlit","Google BigQuery","Azure OpenAI"]',
+    stats_deploys: 0, stats_demos: 0, stats_projects: 0, stats_rating: null,
+    demo_video: "PolicyAnomalyBot.mp4",
   },
-  // ── FORGE ──────────────────────────────────────────────────────────────────
   {
     id: "FRG-001",
-    name: "Prompt Library",
-    desc: "Curated, versioned library of enterprise-grade prompts for summarisation, extraction, and classification use cases.",
+    name: "Sprinter",
     family: "forge",
-    clouds: ["aws", "azure", "gcp"],
-    maturity: "battle-tested",
-    effort: "1 day",
-    demoReady: true,
-    solution: "Prompt Engineering",
-    owner: "Divya Nair",
-    ownerInitials: "DN",
-    architecture: "https://storage.aimplify.infovision.com/arch/frg-001.png",
-    quickStart:
-      "npm install @infovision/prompt-library\nimport { summarise } from '@infovision/prompt-library'\nconst result = await summarise(text, { model: 'gpt-4o' })",
-    prerequisites: ["Node.js 18+", "OpenAI or Azure OpenAI API key"],
-    tags: [
-      "prompts",
-      "llm",
-      "summarisation",
-      "extraction",
-      "classification",
-      "forge",
-    ],
-    changelog: [
-      "v4.0.0 - Claude 3.5 Sonnet templates",
-      "v3.2.0 - Multilingual prompts",
-      "v3.0.0 - Versioned prompt registry",
-    ],
-    stats: { deploys: 389, stars: 201 },
+    solution: "Engineering Productivity Office",
+    desc: "AI-powered SDLC bot that expands user stories, generates tasks, test cases, code snippets, and release notes via a Kanban board.",
+    long_desc: "Sprinter is a web application integrated with GPT-3.5-turbo that streamlines the entire software development lifecycle.",
+    maturity: "validated", effort: "medium", demoReady: 1,
+    clouds: '["azure"]',
+    tags: '["SDLC","Agile","User Stories","Test Cases","Code Generation","Kanban","Release Notes","GPT","JIRA"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Noumika Balaji", ownerInitials: "NB",
+    ownerEmail: "Noumika.Balaji@infovision.com",
+    prerequisites: '["Python 3.x","Node.js","React"]',
+    stats_deploys: 0, stats_demos: 8, stats_projects: 0, stats_rating: null,
+    demo_video: "Sprinter.mp4",
   },
   {
     id: "FRG-002",
-    name: "RAG Pipeline Kit",
-    desc: "End-to-end RAG pipeline with ingestion, chunking, embedding, hybrid retrieval, and evaluation framework.",
+    name: "Code Migration Frameworks",
     family: "forge",
-    clouds: ["aws", "azure"],
-    maturity: "battle-tested",
-    effort: "2 weeks",
-    demoReady: true,
-    solution: "Knowledge AI",
-    owner: "Rahul Krishnan",
-    ownerInitials: "RK",
-    architecture: "https://storage.aimplify.infovision.com/arch/frg-002.png",
-    quickStart:
-      "git clone https://github.com/infovision/rag-kit\ncd rag-kit\ndocker-compose up -d\npython ingest.py --source ./docs",
-    prerequisites: [
-      "Docker 24+",
-      "OpenAI API key",
-      "Pinecone or Weaviate account",
-      "Python 3.11+",
-    ],
-    tags: [
-      "rag",
-      "embeddings",
-      "retrieval",
-      "chunking",
-      "knowledge-base",
-      "forge",
-    ],
-    changelog: [
-      "v2.4.0 - Hybrid BM25 + vector search",
-      "v2.0.0 - Evaluation framework added",
-      "v1.5.0 - Multi-format ingestion",
-    ],
-    stats: { deploys: 276, stars: 189 },
+    solution: "Modernization Factory",
+    desc: "AI-assisted COBOL-to-Java and .NET-to-Node.js code migration with real-time developer Q&A and context-aware conversion.",
+    long_desc: "Code Migration Frameworks is a multi-language modernization accelerator that uses GitHub Copilot and Gemini code assist plugins to convert legacy codebases to modern tech stacks.",
+    maturity: "validated", effort: "high", demoReady: 1,
+    clouds: '["azure","gcp"]',
+    tags: '["COBOL","Java","Springboot","Code Migration","Legacy Modernization",".NET","Node.js","GitHub Copilot","Gemini"]',
+    quickStart: "Console / GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Blesson Roy", ownerInitials: "BR",
+    ownerEmail: "Blesson.Roy@infovision.com",
+    prerequisites: '["Python 3.x","Java 17+","Node.js 18+","COBOL runtime"]',
+    stats_deploys: 0, stats_demos: 0, stats_projects: 0, stats_rating: null,
+    demo_video: "",
   },
   {
     id: "FRG-003",
-    name: "LLM Fine-Tuning Accelerator",
-    desc: "Accelerates domain-specific fine-tuning of open-source LLMs with automated dataset prep, training pipelines, and evaluation.",
+    name: "AI Code Reviewer",
     family: "forge",
-    clouds: ["aws", "gcp"],
-    maturity: "validated",
-    effort: "3 weeks",
-    demoReady: false,
-    solution: "Model Development",
-    owner: "Suresh Babu",
-    ownerInitials: "SB",
-    architecture: "https://storage.aimplify.infovision.com/arch/frg-003.png",
-    quickStart:
-      "pip install aimplify-finetune\naimplify-finetune prepare --data ./raw_data\naimplify-finetune train --model mistral-7b --epochs 3",
-    prerequisites: [
-      "NVIDIA GPU (A100 recommended)",
-      "CUDA 12.1+",
-      "Python 3.11+",
-      "Hugging Face token",
-    ],
-    tags: ["fine-tuning", "llm", "mistral", "llama", "training", "forge"],
-    changelog: [
-      "v1.2.0 - LoRA and QLoRA support",
-      "v1.1.0 - Automated eval benchmarks",
-      "v1.0.0 - Initial release",
-    ],
-    stats: { deploys: 67, stars: 93 },
+    solution: "Release Acceleration",
+    desc: "Webhook-triggered AI code reviewer that delivers line-by-line analysis, best practice feedback, and Slack notifications on every PR.",
+    long_desc: "Webhook-driven SDLC optimisation bot that automates code review on every pull or merge request.",
+    maturity: "validated", effort: "medium", demoReady: 1,
+    clouds: '["azure"]',
+    tags: '["Code Review","Webhook","GitLab","Slack","CI/CD","GPT-4","SDLC","Automated Review","Pull Request"]',
+    quickStart: "Integrated with Slack and Jira",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Pratyoosh Patel", ownerInitials: "PP",
+    ownerEmail: "Pratyoosh.Patel@infovision.com",
+    prerequisites: '["Python 3.x","GitLab CI/CD","Slack SDK"]',
+    stats_deploys: 0, stats_demos: 0, stats_projects: 0, stats_rating: null,
+    demo_video: "AutomatedCodeReviews.mp4",
   },
-  // ── RELAY ──────────────────────────────────────────────────────────────────
+  {
+    id: "FRG-004",
+    name: "ADLC Unified Framework",
+    family: "forge",
+    solution: "Engineering Productivity Office",
+    desc: "Unified AI Enabler Framework for AIDLC",
+    long_desc: "AI Enabler Framework in a coding IDE to analyse, design, build, test and audit components for different roles — BA, Front End Dev, Back End Dev, DBA and QA for any application SDLC.",
+    maturity: "battle-tested", effort: "medium", demoReady: 1,
+    clouds: '[]',
+    tags: '["AI SDLC","AI enabled development","AI framework for SDLC","front end development","back end development","BA Analysis","Reverse Analysis"]',
+    quickStart: "IDE",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Priyanka Fulewale", ownerInitials: "PF",
+    ownerEmail: "Priyanka.Fulewale@infovision.com",
+    prerequisites: '["IDE deployment - autosetup"]',
+    stats_deploys: 1, stats_demos: 1, stats_projects: 1, stats_rating: 85,
+    demo_video: "ADLCUnifiedFramework-Screenshot.png",
+  },
+  {
+    id: "FRG-005",
+    name: "Autonomous SDLC Framework",
+    family: "forge",
+    solution: "Engineering Productivity Office",
+    desc: "AI Enabler to perform autonomous AIDLC",
+    long_desc: "AI Enabler Framework to do an Autonomous SDLC from ADO entry to feature rollout through complete SDLC.",
+    maturity: "experimental", effort: "medium", demoReady: 1,
+    clouds: '[]',
+    tags: '["Autonomous SDLC","AI SDLC","AI enabled development","AI framework for SDLC"]',
+    quickStart: "IDE",
+    repoUrl: "Request for Repo", demoUrl: "Video available",
+    owner: "Nainik K", ownerInitials: "NK",
+    ownerEmail: "Nainik.K@infovision.com",
+    prerequisites: '["ADO","Github","IDE deployment (VSCode)"]',
+    stats_deploys: 0, stats_demos: 2, stats_projects: 0, stats_rating: null,
+    demo_video: "",
+  },
   {
     id: "RLY-001",
-    name: "API Gateway Accelerator",
-    desc: "Production-ready API gateway with rate limiting, authentication, logging, and AI-specific LLM proxy middleware.",
+    name: "Multiagent Call Center Automation",
     family: "relay",
-    clouds: ["aws", "azure"],
-    maturity: "battle-tested",
-    effort: "1 week",
-    demoReady: true,
-    solution: "Integration",
-    owner: "Anjali Verma",
-    ownerInitials: "AV",
-    architecture: "https://storage.aimplify.infovision.com/arch/rly-001.png",
-    quickStart:
-      "helm repo add aimplify https://charts.infovision.com\nhelm install api-gateway aimplify/api-gateway -f values.yaml",
-    prerequisites: ["Kubernetes 1.28+", "Helm 3+", "TLS certificate"],
-    tags: ["api-gateway", "rate-limiting", "auth", "llm-proxy", "relay"],
-    changelog: [
-      "v3.1.0 - LLM token usage tracking",
-      "v3.0.0 - Multi-tenant support",
-      "v2.5.0 - JWT + OAuth2",
-    ],
-    stats: { deploys: 184, stars: 112 },
+    solution: "Customer Care Studio",
+    desc: "LangGraph multi-agent system with 6 specialised agents automating sentiment analysis, ticketing, recommendations, and resolution.",
+    long_desc: "The Multiagent Call Center Automation System is an AI-driven solution built on a LangGraph-based multi-agent framework that optimises call center operations through specialised autonomous agents.",
+    maturity: "validated", effort: "high", demoReady: 1,
+    clouds: '["gcp"]',
+    tags: '["Multi-Agent","LangGraph","Call Center","Sentiment Analysis","JIRA","Automation","Agentic AI","Orchestration","Gemini"]',
+    quickStart: "Embedded into IVR system",
+    repoUrl: "https://github.com/by-Gokulram/multiagent_callcenter_automation.git",
+    demoUrl: "Not Available Yet",
+    owner: "Noumika Balaji", ownerInitials: "NB",
+    ownerEmail: "Noumika.Balaji@infovision.com",
+    prerequisites: '["Python 3.x","LangGraph","PostgreSQL"]',
+    stats_deploys: 1, stats_demos: 5, stats_projects: 1, stats_rating: 75,
+    demo_video: "MultiagentDemo.mp4",
   },
   {
     id: "RLY-002",
-    name: "Event Streaming Connector",
-    desc: "Real-time event streaming between Kafka, Pub/Sub, and AI inference endpoints with schema registry integration.",
+    name: "Healthcare Bot",
     family: "relay",
-    clouds: ["aws", "gcp"],
-    maturity: "validated",
-    effort: "2 weeks",
-    demoReady: false,
-    solution: "Data Streaming",
-    owner: "Vikram Singh",
-    ownerInitials: "VS",
-    architecture: "https://storage.aimplify.infovision.com/arch/rly-002.png",
-    quickStart:
-      "docker pull infovision/event-connector:latest\ndocker run -e KAFKA_BROKERS=... -e PUBSUB_PROJECT=... infovision/event-connector",
-    prerequisites: [
-      "Kafka 3.5+ or Google Pub/Sub",
-      "Docker 24+",
-      "Schema Registry access",
-    ],
-    tags: ["kafka", "pubsub", "streaming", "real-time", "relay"],
-    changelog: [
-      "v1.4.0 - Dead-letter queue support",
-      "v1.3.0 - Avro schema validation",
-      "v1.0.0 - Initial release",
-    ],
-    stats: { deploys: 89, stars: 56 },
+    solution: "Enterprise Knowledge Assistant",
+    desc: "Dual-persona RAG chatbot for hospital environments serving both patients and staff with role-tailored, policy-aware responses.",
+    long_desc: "The Healthcare Bot is a dual-persona RAG-powered conversational agent designed for hospital environments.",
+    maturity: "validated", effort: "medium", demoReady: 1,
+    clouds: '["azure","gcp"]',
+    tags: '["RAG","Healthcare","Dual Persona","Chroma","Redis","Embeddings","Knowledge Retrieval","Gemini","FastAPI"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Abhiram Kalidindi", ownerInitials: "AK",
+    ownerEmail: "Abhiram.Kalidindi@infovision.com",
+    prerequisites: '["Python 3.x","FastAPI","Redis","Chroma"]',
+    stats_deploys: 1, stats_demos: 4, stats_projects: 1, stats_rating: 50,
+    demo_video: "HealthcareBot.mp4",
   },
-  // ── SENTINEL ───────────────────────────────────────────────────────────────
+  {
+    id: "RLY-003",
+    name: "Contextual Intelligence – Speech Diarization",
+    family: "relay",
+    solution: "Customer Care Studio",
+    desc: "Real-time speech diarization that structures live customer conversations and serves contextual product data and trade-in options instantly.",
+    long_desc: "Real-time conversational intelligence accelerator built for high-engagement customer interactions.",
+    maturity: "battle-tested", effort: "high", demoReady: 1,
+    clouds: '["gcp","azure"]',
+    tags: '["Speech Diarization","Real-Time","Conversational AI","Web Scraping","Redis","LangChain","Gemini","Speaker Attribution","Cart Integration"]',
+    quickStart: "Mobile device based GUI",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Pratyoosh Patel", ownerInitials: "PP",
+    ownerEmail: "Pratyoosh.Patel@infovision.com",
+    prerequisites: '["Python 3.x","React.js","FastAPI","Redis","LangChain"]',
+    stats_deploys: 1, stats_demos: 7, stats_projects: 1, stats_rating: 75,
+    demo_video: "SpeechDiarization.mp4",
+  },
+  {
+    id: "RLY-004",
+    name: "AIOps",
+    family: "relay",
+    solution: "Service & Order Operations AI",
+    desc: "Agentic AI Platform to monitor, triage and resolve production incidents",
+    long_desc: "Agentic AI Platform for AI Operations in a Multi-Agent setup to monitor, triage and resolve production incidents in a guided autonomy mode.",
+    maturity: "experimental", effort: "high", demoReady: 1,
+    clouds: '["azure"]',
+    tags: '["AIOps","Production Support","Incident monitoring","Incident resolution","Agentic AI for Ops"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "http://74.249.248.133:8887/",
+    owner: "Balasubramani Murugesan", ownerInitials: "BM",
+    ownerEmail: "Balasubramani.Murugesan@infovision.com",
+    prerequisites: '["Hosted service"]',
+    stats_deploys: 1, stats_demos: 3, stats_projects: 1, stats_rating: 70,
+    demo_video: "",
+  },
   {
     id: "SNT-001",
-    name: "AI Governance Dashboard",
-    desc: "Centralised dashboard for monitoring AI model outputs, bias detection, drift alerts, and compliance reporting.",
+    name: "Sentiment Analysis on Call Recordings",
     family: "sentinel",
-    clouds: ["aws", "azure", "gcp"],
-    maturity: "validated",
-    effort: "2 weeks",
-    demoReady: true,
-    solution: "AI Governance",
-    owner: "Meera Pillai",
-    ownerInitials: "MP",
-    architecture: "https://storage.aimplify.infovision.com/arch/snt-001.png",
-    quickStart:
-      "docker-compose -f governance-stack.yml up -d\nopen http://localhost:3000",
-    prerequisites: [
-      "Docker 24+",
-      "PostgreSQL 15+",
-      "Model inference logs in JSONL format",
-    ],
-    tags: [
-      "governance",
-      "bias-detection",
-      "drift",
-      "compliance",
-      "monitoring",
-      "sentinel",
-    ],
-    changelog: [
-      "v2.0.0 - EU AI Act compliance module",
-      "v1.5.0 - Real-time drift alerts",
-      "v1.0.0 - Initial release",
-    ],
-    stats: { deploys: 73, stars: 98 },
+    solution: "Customer Care Studio",
+    desc: "Gemini 1.5 Pro multimodal call analyser that detects sentiment, tone, sarcasm, and compliance violations directly from audio — no transcription needed.",
+    long_desc: "Uses Google Gemini 1.5 Pro's native multimodal audio processing to analyse customer service calls end-to-end without requiring a separate transcription step.",
+    maturity: "validated", effort: "medium", demoReady: 1,
+    clouds: '["gcp"]',
+    tags: '["Sentiment Analysis","Call Recordings","Compliance","Tone Detection","Gemini","Multimodal","Audio Processing","Call Center","QA Monitoring"]',
+    quickStart: "Embedded into IVR system",
+    repoUrl: "https://github.com/by-Gokulram/tone_sentiment_analysis.git",
+    demoUrl: "Not Available Yet",
+    owner: "Pratyoosh Patel", ownerInitials: "PP",
+    ownerEmail: "Pratyoosh.Patel@infovision.com",
+    prerequisites: '["Python 3.x","LangChain","Streamlit","Gemini 1.5 Pro"]',
+    stats_deploys: 1, stats_demos: 3, stats_projects: 1, stats_rating: 65,
+    demo_video: "SentimentAnalysisDemo.mp4",
   },
   {
     id: "SNT-002",
-    name: "PII Redaction Engine",
-    desc: "High-performance PII detection and redaction engine supporting 30+ entity types across structured and unstructured data.",
+    name: "Responsible AI Automation",
     family: "sentinel",
-    clouds: ["aws", "azure"],
-    maturity: "battle-tested",
-    effort: "3 days",
-    demoReady: true,
-    solution: "Data Privacy",
-    owner: "Anand Rajan",
-    ownerInitials: "AR",
-    architecture: "https://storage.aimplify.infovision.com/arch/snt-002.png",
-    quickStart:
-      "pip install aimplify-redact\nfrom aimplify_redact import RedactionEngine\nengine = RedactionEngine()\nclean = engine.redact(text)",
-    prerequisites: ["Python 3.10+", "spaCy models downloaded"],
-    tags: ["pii", "redaction", "privacy", "gdpr", "nlp", "sentinel"],
-    changelog: [
-      "v3.2.0 - Hindi and Tamil NER support",
-      "v3.0.0 - Streaming redaction API",
-      "v2.5.0 - 30+ entity types",
-    ],
-    stats: { deploys: 198, stars: 143 },
+    solution: "AI Run Office",
+    desc: "Agent-based decision automation for Responsible AI",
+    long_desc: "RAIE is an enterprise-grade Responsible AI governance platform with agentic architecture that transforms manual approval workflows into an intelligent, autonomous system.",
+    maturity: "experimental", effort: "high", demoReady: 1,
+    clouds: '["azure","gcp","aws"]',
+    tags: '["AI Governance","Responsible AI","Enterprise Compliance","Risk Management","Regulatory Compliance"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Hasham Ul Haq", ownerInitials: "HH",
+    ownerEmail: "Hasham.UlHaq@infovision.com",
+    prerequisites: '["Hosted service"]',
+    stats_deploys: 1, stats_demos: 5, stats_projects: 1, stats_rating: 75,
+    demo_video: "ResponsibleAIAgentic.mp4",
   },
-  // ── NEXUS ──────────────────────────────────────────────────────────────────
   {
     id: "NXS-001",
-    name: "MLOps Pipeline Starter",
-    desc: "End-to-end MLOps starter with CI/CD for models, experiment tracking, model registry, and automated cloud deployment.",
+    name: "SLM vs LLM Decision Playbook",
     family: "nexus",
-    clouds: ["aws", "gcp"],
-    maturity: "validated",
-    effort: "3 weeks",
-    demoReady: false,
-    solution: "MLOps",
-    owner: "Karthik Sundaram",
-    ownerInitials: "KS",
-    architecture: "https://storage.aimplify.infovision.com/arch/nxs-001.png",
-    quickStart:
-      "git clone https://github.com/infovision/mlops-starter\ncd mlops-starter\nmake bootstrap ENV=dev",
-    prerequisites: [
-      "Terraform 1.5+",
-      "GitHub Actions or GitLab CI",
-      "MLflow or Vertex AI account",
-      "Docker 24+",
-    ],
-    tags: ["mlops", "ci-cd", "mlflow", "model-registry", "deployment", "nexus"],
-    changelog: [
-      "v2.1.0 - Vertex AI Pipelines integration",
-      "v2.0.0 - Model canary deployment",
-      "v1.5.0 - Experiment tracking",
-    ],
-    stats: { deploys: 112, stars: 77 },
+    solution: "Model & Agent Operations",
+    desc: "A systematic framework for choosing between Small Language Models and Large Language Models based on deployment constraints and business requirements.",
+    long_desc: "Cost-analysis and benchmarking tool that helps engineering teams make informed model selection decisions before committing to a tech stack.",
+    maturity: "validated", effort: "low", demoReady: 1,
+    clouds: '["vercel"]',
+    tags: '["LLM Benchmarking","Cost Analysis","Token Cost","Model Selection","SLM","Embeddings","LangChain","LlamaIndex","GPT"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "https://arch-eval-wx7y.vercel.app/",
+    owner: "Dhanuvanth Senthilkumar", ownerInitials: "DS",
+    ownerEmail: "Dhanuvanth.SenthilKumar@infovision.com",
+    prerequisites: '["React and React DOM","TypeScript","Vite","Tailwind CSS","Google Generative AI SDK","Supabase client"]',
+    stats_deploys: 0, stats_demos: 3, stats_projects: 0, stats_rating: null,
+    demo_video: "",
   },
   {
     id: "NXS-002",
-    name: "AI Cost Optimizer",
-    desc: "Analyses LLM API usage and recommends routing, caching, and batching strategies to reduce inference costs by up to 60%.",
+    name: "PromptEval",
     family: "nexus",
-    clouds: ["aws", "azure", "gcp"],
-    maturity: "experimental",
-    effort: "1 week",
-    demoReady: true,
-    solution: "Cost Management",
-    owner: "Deepa Krishnamurthy",
-    ownerInitials: "DK",
-    architecture: "https://storage.aimplify.infovision.com/arch/nxs-002.png",
-    quickStart:
-      "pip install aimplify-cost-optimizer\naimplify-cost analyze --logs ./api_logs.jsonl --report report.html",
-    prerequisites: ["Python 3.11+", "LLM API usage logs in JSONL format"],
-    tags: ["cost-optimization", "llm", "caching", "routing", "nexus"],
-    changelog: [
-      "v0.3.0 - Semantic caching recommendations",
-      "v0.2.0 - Model routing engine",
-      "v0.1.0 - Initial release",
-    ],
-    stats: { deploys: 34, stars: 58 },
+    solution: "Common Infrastructure",
+    desc: "Shared prompt evaluation framework for testing, scoring, and iterating on prompts across all platform families and LLM providers.",
+    long_desc: "Cross-platform prompt quality evaluation framework that provides a structured methodology for testing, scoring, and iterating on prompts before production deployment.",
+    maturity: "experimental", effort: "low", demoReady: 1,
+    clouds: '["azure","gcp"]',
+    tags: '["Prompt Engineering","Evaluation","Benchmarking","Quality","LLM Testing","Regression","Prompt Management"]',
+    quickStart: "Console / Chat interface / GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Kishore Bodelu", ownerInitials: "KB",
+    ownerEmail: "Kishore.Bodelu@infovision.com",
+    prerequisites: '["Python 3.x","LangChain","Azure OpenAI"]',
+    stats_deploys: 1, stats_demos: 2, stats_projects: 1, stats_rating: 80,
+    demo_video: "",
+  },
+  {
+    id: "NXS-003",
+    name: "LIE – LLM Insight Engine",
+    family: "nexus",
+    solution: "Model & Agent Operations",
+    desc: "Unified multi-LLM benchmarking platform that runs concurrent queries across GPT, Mistral, Llama, Gemini and compares responses side by side.",
+    long_desc: "Single unified platform enabling development teams to benchmark any combination of LLMs and embedding models against the same training document and query set.",
+    maturity: "battle-tested", effort: "high", demoReady: 1,
+    clouds: '["azure","gcp"]',
+    tags: '["LLM Benchmarking","Multi-LLM","GPT","Mistral","Llama","Gemini","Embeddings","Model Comparison","FAISS","LangChain","LlamaIndex"]',
+    quickStart: "GUI based",
+    repoUrl: "Request for Repo", demoUrl: "Not Available Yet",
+    owner: "Noumika Balaji", ownerInitials: "NB",
+    ownerEmail: "Noumika.Balaji@infovision.com",
+    prerequisites: '["Python 3.x","React","LangChain","LlamaIndex","PyTorch","CUDA","FAISS"]',
+    stats_deploys: 1, stats_demos: 7, stats_projects: 1, stats_rating: 70,
+    demo_video: "LLMInsightEngine.mp4",
+  },
+  {
+    id: "NXS-004",
+    name: "Video Intelligence Platform (VIP)",
+    family: "nexus",
+    solution: "Multi-Agent Orchestration",
+    desc: "Video Intelligence Platform for multi-agent orchestration and analysis",
+    long_desc: "Video Intelligence Platform (VIP) — multi-agent video analysis and orchestration platform.",
+    maturity: "experimental", effort: "medium", demoReady: 1,
+    clouds: '[]',
+    tags: '["Video Intelligence","Multi-Agent","VIP"]',
+    quickStart: "",
+    repoUrl: "", demoUrl: "",
+    owner: "Abhiram Kalidindi", ownerInitials: "AK",
+    ownerEmail: "Abhiram.Kalidindi@infovision.com",
+    prerequisites: '[]',
+    stats_deploys: 0, stats_demos: 0, stats_projects: 0, stats_rating: null,
+    demo_video: "VIPDemo.mp4",
   },
 ];
 
-// ── Runner ────────────────────────────────────────────────────────────────────
+// Registrations — every field from registrationCreateSqlite / mapRegistrationRow
+const REGISTRATIONS = [
+  {
+    registrationId: "REG-001",
+    name: "Voice of Customer Analyser",
+    family: "sentinel",
+    description: "Gemini-powered sentiment and tone classifier for live call recordings and post-call surveys. Detects sentiment intensity, flags compliance violations, and generates trend reports.",
+    submitedBy: "Pratyoosh Patel",
+    status: "ai-review",
+    aiScore: null, govReviewer: "", govNotes: "",
+    owner: "Pratyoosh Patel", team: "Customer Care Studio",
+    coContributors: "", version: "1.0", cloud: "gcp",
+    maturity: "validated", gitUrl: "",
+    architecture: "", prerequisites: "Python 3.x, LangChain, Streamlit",
+    tags: "Sentiment Analysis, Compliance, Gemini, Audio Processing",
+    quickStart: "GUI based",
+    demo_video: "SentimentAnalysisDemo.mp4",
+  },
+  {
+    registrationId: "REG-002",
+    name: "Agentic Workflow Orchestrator",
+    family: "relay",
+    description: "LangGraph-based multi-agent orchestration framework for automating end-to-end enterprise workflows including ticketing, CRM sync, and intelligent routing across 6 specialised agents.",
+    submitedBy: "Noumika Balaji",
+    status: "remediation",
+    aiScore: 62, govReviewer: "", govNotes: "Needs clearer data-residency documentation before governance sign-off.",
+    owner: "Noumika Balaji", team: "Customer Care Studio",
+    coContributors: "", version: "1.0", cloud: "gcp",
+    maturity: "validated", gitUrl: "https://github.com/by-Gokulram/multiagent_callcenter_automation.git",
+    architecture: "", prerequisites: "Python 3.x, LangGraph, PostgreSQL",
+    tags: "Multi-Agent, LangGraph, Call Center, Agentic AI, Gemini",
+    quickStart: "Embedded into IVR system",
+    demo_video: "MultiagentDemo.mp4",
+  },
+  {
+    registrationId: "REG-003",
+    name: "Code Quality Accelerator v2",
+    family: "forge",
+    description: "Webhook-triggered AI code review bot with enhanced security scanning, dependency analysis, and auto-generated remediation suggestions delivered via Slack.",
+    submitedBy: "Pratyoosh Patel",
+    status: "governance",
+    aiScore: 84, govReviewer: "Hasham Ul Haq", govNotes: "Security controls verified. Pending final IP sign-off.",
+    owner: "Pratyoosh Patel", team: "Release Acceleration",
+    coContributors: "", version: "2.0", cloud: "azure",
+    maturity: "validated", gitUrl: "",
+    architecture: "", prerequisites: "Python 3.x, GitLab CI/CD, Slack SDK",
+    tags: "Code Review, Webhook, GitLab, Slack, CI/CD, GPT-4",
+    quickStart: "Integrated with Slack and Jira",
+    demo_video: "AutomatedCodeReviews.mp4",
+  },
+  {
+    registrationId: "REG-004",
+    name: "ADLC Framework – IDE Plugin",
+    family: "forge",
+    description: "IDE-embedded AI enabler for full SDLC coverage — BA analysis, front-end and back-end code generation, reverse engineering, DBA scripting, and QA test generation in a single plugin.",
+    submitedBy: "Priyanka Fulewale",
+    status: "approved",
+    aiScore: 91, govReviewer: "Hasham Ul Haq", govNotes: "Approved. Promoted to catalogue as FRG-004.",
+    owner: "Priyanka Fulewale", team: "Engineering Productivity Office",
+    coContributors: "", version: "1.0", cloud: "",
+    maturity: "battle-tested", gitUrl: "",
+    architecture: "", prerequisites: "IDE deployment - autosetup",
+    tags: "AI SDLC, AI enabled development, AI framework for SDLC",
+    quickStart: "IDE",
+    demo_video: "ADLCUnifiedFramework-Screenshot.png",
+  },
+  {
+    registrationId: "REG-005",
+    name: "Real-Time Speech Intelligence",
+    family: "relay",
+    description: "Live speech diarization accelerator that attributes utterances per speaker, extracts intent signals, and surfaces real-time product recommendations for CSR-assisted sales.",
+    submitedBy: "Veerasekhar",
+    status: "approved",
+    aiScore: 88, govReviewer: "Hasham Ul Haq", govNotes: "Approved. Promoted to catalogue as RLY-003.",
+    owner: "Pratyoosh Patel", team: "Customer Care Studio",
+    coContributors: "Veerasekhar, Abhiram, Blesson, Padma Priya, Satish, Rahul",
+    version: "1.0", cloud: "gcp",
+    maturity: "battle-tested", gitUrl: "",
+    architecture: "", prerequisites: "Python 3.x, React.js, FastAPI, Redis, LangChain",
+    tags: "Speech Diarization, Real-Time, Conversational AI, LangChain, Gemini",
+    quickStart: "Mobile device based GUI",
+    demo_video: "SpeechDiarization.mp4",
+  },
+  {
+    registrationId: "REG-006",
+    name: "Responsible AI Governance Engine",
+    family: "sentinel",
+    description: "Agentic platform that automates Responsible AI approval workflows — enriching submissions with risk, compliance, and budget data, auto-approving low-risk cases and routing complex ones for human review.",
+    submitedBy: "Hasham Ul Haq",
+    status: "ai-review",
+    aiScore: null, govReviewer: "", govNotes: "",
+    owner: "Hasham Ul Haq", team: "AI Run Office",
+    coContributors: "", version: "0.9", cloud: "azure",
+    maturity: "experimental", gitUrl: "",
+    architecture: "", prerequisites: "Hosted service",
+    tags: "AI Governance, Responsible AI, Enterprise Compliance, Risk Management",
+    quickStart: "GUI based",
+    demo_video: "ResponsibleAIAgentic.mp4",
+  },
+];
+
+// ─── Runner ───────────────────────────────────────────────────────────────────
 async function seed() {
-  await mongoose.connect(process.env.MONGODB_URI);
-  console.log("✅ MongoDB connected\n");
 
-  // Families
-  await Family.deleteMany({});
-  const insertedFamilies = await Family.insertMany(families);
-  console.log(`✅ Inserted ${insertedFamilies.length} families:`);
-  insertedFamilies.forEach((f) =>
-    console.log(`   ${f.key.padEnd(10)} — ${f.name}`),
-  );
+  // 1. Ensure extra columns exist on both tables
+  console.log("🔄 Checking schema columns...");
+  await addCol("assets", "long_desc",         "TEXT DEFAULT ''");
+  await addCol("assets", "repo_url",          "TEXT DEFAULT ''");
+  await addCol("assets", "demo_url",          "TEXT DEFAULT ''");
+  await addCol("assets", "owner_email",       "TEXT DEFAULT ''");
+  await addCol("assets", "stats_demos",       "INTEGER NOT NULL DEFAULT 0");
+  await addCol("assets", "stats_projects",    "INTEGER NOT NULL DEFAULT 0");
+  await addCol("assets", "stats_rating",      "INTEGER");
+  await addCol("assets", "attachments",       "TEXT DEFAULT '[]'");
+  await addCol("assets", "related_asset_ids", "TEXT DEFAULT '[]'");
+  await addCol("assets", "demo_video_relpath","TEXT DEFAULT ''");
+  await addCol("assets", "submission_status", "TEXT DEFAULT NULL");
+  await addCol("assets", "submission_id",     "TEXT DEFAULT NULL");
+  await addCol("assets", "changelog",         "TEXT DEFAULT '[]'");
 
-  console.log();
+  await addCol("registrations", "demo_video_relpath", "TEXT DEFAULT ''");
+  await addCol("registrations", "owner",              "TEXT DEFAULT ''");
+  await addCol("registrations", "team",               "TEXT DEFAULT ''");
+  await addCol("registrations", "coContributors",     "TEXT DEFAULT ''");
+  await addCol("registrations", "version",            "TEXT DEFAULT ''");
+  await addCol("registrations", "cloud",              "TEXT DEFAULT ''");
+  await addCol("registrations", "maturity",           "TEXT DEFAULT 'experimental'");
+  await addCol("registrations", "gitUrl",             "TEXT DEFAULT ''");
+  await addCol("registrations", "architecture",       "TEXT DEFAULT ''");
+  await addCol("registrations", "prerequisites",      "TEXT DEFAULT ''");
+  await addCol("registrations", "tags",               "TEXT DEFAULT ''");
+  await addCol("registrations", "quickStart",         "TEXT DEFAULT ''");
+  await addCol("registrations", "submission_attachments", "TEXT DEFAULT '[]'");
+  await addCol("registrations", "promoted_asset_id", "TEXT DEFAULT ''");
+  console.log("✅ Schema OK\n");
 
-  // Assets
-  await Asset.deleteMany({});
-  const insertedAssets = await Asset.insertMany(assets);
-  console.log(`✅ Inserted ${insertedAssets.length} assets:`);
-  insertedAssets.forEach((a) =>
-    console.log(`   ${a.id.padEnd(10)} — ${a.name}`),
-  );
+  // 2. Clear existing data
+  await db.execute("DELETE FROM assets").catch(() => {});
+  await db.execute("DELETE FROM registrations").catch(() => {});
+  await db.execute("DELETE FROM activities").catch(() => {});
+  console.log("🗑  Cleared assets, registrations, activities\n");
 
-  console.log("\n🎉 Seed complete!");
-  await mongoose.disconnect();
+  // 3. Seed families
+  console.log("🌱 Seeding families...");
+  for (const [key, name, tagline, long_desc, use_cases, solutions, depends_on, enables] of FAMILIES) {
+    await db.execute({
+      sql: `INSERT INTO families (key, name, tagline, long_desc, use_cases, solutions, depends_on, enables)
+            VALUES (?,?,?,?,?,?,?,?)
+            ON CONFLICT(key) DO UPDATE SET
+              name=excluded.name, tagline=excluded.tagline, long_desc=excluded.long_desc,
+              use_cases=excluded.use_cases, solutions=excluded.solutions,
+              depends_on=excluded.depends_on, enables=excluded.enables`,
+      args: [key, name, tagline, long_desc, use_cases, solutions, depends_on, enables],
+    });
+  }
+  console.log(`✅ ${FAMILIES.length} families seeded\n`);
+
+  // 4. Seed assets — upload blob first, then INSERT with all fields + blob URL
+  console.log("🌱 Seeding assets...");
+  for (const a of ASSETS) {
+    console.log(`⏳ ${a.id} — ${a.name}`);
+
+    // Check DB for existing blob URL — skip re-upload if already there
+    const existingAsset = await db.execute({ sql: "SELECT demo_video_relpath FROM assets WHERE id=?", args: [a.id] }).catch(() => ({ rows: [] }));
+    const existingAssetUrl = existingAsset.rows[0]?.demo_video_relpath || "";
+    const demoVideoUrl = await uploadMediaToBlob(a.demo_video, "demos", a.id, existingAssetUrl);
+
+    await db.execute({
+      sql: `INSERT INTO assets (
+              id, name, desc, long_desc, family, clouds, maturity, effort, demoReady,
+              solution, owner, ownerInitials, owner_email, quickStart,
+              repo_url, demo_url, prerequisites, tags, changelog,
+              attachments, related_asset_ids,
+              demo_video_relpath,
+              stats_deploys, stats_demos, stats_projects, stats_rating,
+              submission_status, submission_id
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(id) DO UPDATE SET
+              name=excluded.name, desc=excluded.desc, long_desc=excluded.long_desc,
+              family=excluded.family, clouds=excluded.clouds,
+              maturity=excluded.maturity, effort=excluded.effort, demoReady=excluded.demoReady,
+              solution=excluded.solution, owner=excluded.owner,
+              ownerInitials=excluded.ownerInitials, owner_email=excluded.owner_email,
+              quickStart=excluded.quickStart, repo_url=excluded.repo_url,
+              demo_url=excluded.demo_url, prerequisites=excluded.prerequisites,
+              tags=excluded.tags, demo_video_relpath=excluded.demo_video_relpath,
+              stats_deploys=excluded.stats_deploys, stats_demos=excluded.stats_demos,
+              stats_projects=excluded.stats_projects, stats_rating=excluded.stats_rating`,
+      args: [
+        a.id, a.name, a.desc, a.long_desc, a.family,
+        a.clouds, a.maturity, a.effort, a.demoReady,
+        a.solution, a.owner, a.ownerInitials, a.ownerEmail, a.quickStart,
+        a.repoUrl, a.demoUrl, a.prerequisites, a.tags, "[]",
+        "[]", "[]",
+        demoVideoUrl,           // ← blob URL stored in demo_video_relpath
+        a.stats_deploys, a.stats_demos, a.stats_projects, a.stats_rating ?? null,
+        null, null,
+      ],
+    });
+    console.log(`   ✅ ${a.id} seeded  [video: ${demoVideoUrl || "none"}]\n`);
+  }
+
+  // 5. Refresh family stats
+  console.log("🔄 Refreshing family stats...");
+  for (const [key] of FAMILIES) {
+    const res = await db.execute({
+      sql: `SELECT COUNT(*) AS assets,
+              COALESCE(SUM(stats_deploys),0) AS deploys,
+              SUM(CASE WHEN LOWER(maturity)='battle-tested' THEN 1 ELSE 0 END) AS bt
+            FROM assets WHERE LOWER(family)=?`,
+      args: [key],
+    });
+    const row = res.rows[0] || {};
+    await db.execute({
+      sql: "UPDATE families SET stats_assets=?, stats_deploys=?, stats_battle_tested=? WHERE key=?",
+      args: [row.assets || 0, row.deploys || 0, row.bt || 0, key],
+    });
+  }
+  console.log("✅ Family stats refreshed\n");
+
+  // 6. Seed registrations — upload blob first, then INSERT with ALL fields
+  console.log("🌱 Seeding registrations...");
+  const now = new Date().toISOString();
+  for (const reg of REGISTRATIONS) {
+    console.log(`⏳ ${reg.registrationId} — ${reg.name}`);
+
+    // Check DB for existing blob URL — skip re-upload if already there
+    const existingReg = await db.execute({ sql: "SELECT demo_video_relpath FROM registrations WHERE registrationId=?", args: [reg.registrationId] }).catch(() => ({ rows: [] }));
+    const existingRegUrl = existingReg.rows[0]?.demo_video_relpath || "";
+    const demoVideoUrl = await uploadMediaToBlob(reg.demo_video, "submissions", reg.registrationId, existingRegUrl);
+
+    const initialHistory = JSON.stringify([{
+      status: reg.status,
+      timestamp: now,
+      changedBy: reg.submitedBy || "System",
+      note: reg.govNotes || "Seeded",
+    }]);
+
+    await db.execute({
+      sql: `INSERT INTO registrations (
+              registrationId, name, family, description, submitedBy, date, status,
+              aiScore, aiFindings, govReviewer, govNotes, statusHistory,
+              owner, team, coContributors, version, cloud, maturity,
+              gitUrl, architecture, prerequisites, tags, quickStart,
+              demo_video_relpath,
+              submission_attachments, promoted_asset_id
+            ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ON CONFLICT(registrationId) DO UPDATE SET
+              name=excluded.name, family=excluded.family,
+              description=excluded.description, submitedBy=excluded.submitedBy,
+              status=excluded.status, aiScore=excluded.aiScore,
+              govReviewer=excluded.govReviewer, govNotes=excluded.govNotes,
+              owner=excluded.owner, team=excluded.team,
+              coContributors=excluded.coContributors, version=excluded.version,
+              cloud=excluded.cloud, maturity=excluded.maturity,
+              gitUrl=excluded.gitUrl, architecture=excluded.architecture,
+              prerequisites=excluded.prerequisites, tags=excluded.tags,
+              quickStart=excluded.quickStart,
+              demo_video_relpath=excluded.demo_video_relpath`,
+      args: [
+        reg.registrationId, reg.name, reg.family, reg.description,
+        reg.submitedBy, now, reg.status,
+        reg.aiScore ?? null, "[]",
+        reg.govReviewer || "", reg.govNotes || "",
+        initialHistory,
+        reg.owner || reg.submitedBy || "",
+        reg.team || "",
+        reg.coContributors || "",
+        reg.version || "",
+        reg.cloud || "",
+        reg.maturity || "experimental",
+        reg.gitUrl || "",
+        reg.architecture || "",
+        reg.prerequisites || "",
+        reg.tags || "",
+        reg.quickStart || "",
+        demoVideoUrl,           // ← blob URL stored in demo_video_relpath
+        "[]", "",
+      ],
+    });
+    console.log(`   ✅ ${reg.registrationId} seeded  [video: ${demoVideoUrl || "none"}]\n`);
+  }
+
+  console.log(`🎉 Done! ${ASSETS.length} assets + ${REGISTRATIONS.length} registrations seeded.`);
+  process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error(err);
+  console.error("❌ Seed failed:", err.message, err.stack);
   process.exit(1);
 });
