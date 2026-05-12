@@ -780,13 +780,54 @@ exports.searchSuggestionsSqlite = async (q) => {
   const qt = String(q || "").trim();
   if (!qt) return { assets: [], families: [] };
   const term = `%${qt.toLowerCase()}%`;
-  const [aRes, fRes] = await Promise.all([
-    db.execute({ sql: "SELECT id, name, family FROM assets WHERE LOWER(name) LIKE ? OR LOWER(id) LIKE ? LIMIT 6", args: [term, term] }),
-    db.execute({ sql: "SELECT key AS id, name, tagline FROM families WHERE LOWER(name) LIKE ? LIMIT 4", args: [term] }),
+  const [aRes, fRes, dRes] = await Promise.all([
+    db.execute({ sql: "SELECT id, name, family FROM assets WHERE LOWER(name) LIKE ? OR LOWER(id) LIKE ? OR LOWER(desc) LIKE ? OR LOWER(tags) LIKE ? OR LOWER(solution) LIKE ? OR LOWER(family) LIKE ? OR LOWER(COALESCE(owner,'')) LIKE ? OR LOWER(COALESCE(clouds,'')) LIKE ? OR LOWER(COALESCE(maturity,'')) LIKE ? OR LOWER(COALESCE(effort,'')) LIKE ? LIMIT 6", args: [term, term, term, term, term, term, term, term, term, term] }),
+    db.execute({ sql: "SELECT key AS id, name, tagline FROM families WHERE LOWER(name) LIKE ? OR LOWER(tagline) LIKE ? OR LOWER(long_desc) LIKE ? OR LOWER(solutions) LIKE ? OR LOWER(use_cases) LIKE ? LIMIT 4", args: [term, term, term, term, term] }),
+    db.execute({ sql: "SELECT family, SUM(stats_deploys) AS deploys FROM assets WHERE LOWER(family) LIKE ? GROUP BY family", args: [term] }),
   ]);
+  const deploysByFamily = {};
+  dRes.rows.forEach((r) => { deploysByFamily[r.family] = Number(r.deploys || 0); });
+
+  // Collect family keys already returned by direct family match
+  const directFamilyIds = new Set(fRes.rows.map((f) => String(f.id).toLowerCase()));
+
+  // For each matched asset, fetch its parent family if not already in results
+  const assetFamilyKeys = [...new Set(
+    aRes.rows
+      .map((a) => String(a.family || "").toLowerCase())
+      .filter((fk) => fk && !directFamilyIds.has(fk))
+  )];
+
+  let extraFamilies = [];
+  if (assetFamilyKeys.length) {
+    const placeholders = assetFamilyKeys.map(() => "?").join(",");
+    const efRes = await db.execute({
+      sql: `SELECT key AS id, name, tagline FROM families WHERE LOWER(key) IN (${placeholders}) LIMIT 4`,
+      args: assetFamilyKeys,
+    });
+    extraFamilies = efRes.rows;
+  }
+
+  const allFamilies = [
+    ...fRes.rows.map((f) => ({ id: f.id, name: f.name, tagline: f.tagline, type: "family", deploys: deploysByFamily[f.id] ?? 0 })),
+    ...extraFamilies.map((f) => ({ id: f.id, name: f.name, tagline: f.tagline, type: "family", deploys: deploysByFamily[f.id] ?? 0 })),
+  ];
+
+  // If no assets matched directly but families matched, fetch assets belonging to those families
+  let allAssets = aRes.rows.map((a) => ({ id: a.id, name: a.name, family: a.family, type: "asset" }));
+  if (allAssets.length === 0 && allFamilies.length > 0) {
+    const familyKeysForAssets = allFamilies.map((f) => String(f.id).toLowerCase());
+    const placeholders2 = familyKeysForAssets.map(() => "?").join(",");
+    const fallbackAssets = await db.execute({
+      sql: `SELECT id, name, family FROM assets WHERE LOWER(family) IN (${placeholders2}) ORDER BY stats_deploys DESC LIMIT 6`,
+      args: familyKeysForAssets,
+    });
+    allAssets = fallbackAssets.rows.map((a) => ({ id: a.id, name: a.name, family: a.family, type: "asset" }));
+  }
+
   return {
-    assets:   aRes.rows.map((a) => ({ id: a.id,   name: a.name,    family: a.family,   type: "asset" })),
-    families: fRes.rows.map((f) => ({ id: f.id,   name: f.name,    tagline: f.tagline, type: "family" })),
+    assets:   allAssets,
+    families: allFamilies,
   };
 };
 
