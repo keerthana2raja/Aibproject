@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Layers,
 } from 'lucide-react';
+import infovisionLogo from '../assets/Infovision_Logo.png';
 
 const NavItem = ({ to, icon: Icon, label, badge, exact, onClick, collapsed }) => (
   <NavLink
@@ -111,8 +112,15 @@ const Sidebar = ({ onClose }) => {
         {!collapsed && (
           <>
             <div className="min-w-0 flex-1 pr-1">
-              <div className="text-[15px] font-bold text-text-primary tracking-tight leading-tight truncate">AIMPLIFY</div>
-              <div className="text-[10px] text-shell-nav-muted uppercase tracking-widest mt-0.5 truncate">by Infovision</div>
+              <img
+                src={infovisionLogo}
+                alt="InfoVision"
+                className="h-7 w-auto max-w-[min(100%,148px)] object-left object-contain"
+                draggable={false}
+              />
+              <div className="text-[13px] font-bold text-text-primary tracking-tight leading-tight truncate mt-0.5">
+                AIMPLIFY
+              </div>
             </div>
             <button
               type="button"
@@ -156,7 +164,7 @@ const Sidebar = ({ onClose }) => {
 
         <SectionLabel label="System" collapsed={collapsed} />
         {/* <NavItem to="/settings" icon={Settings} label="Settings" onClick={onClose} collapsed={collapsed} /> */}
-        <NavItem to="/help" icon={LifeBuoy} label="Help (Coming Soon)" onClick={onClose} collapsed={collapsed} />
+        <NavItem to="/help" icon={LifeBuoy} label="Help" onClick={onClose} collapsed={collapsed} />
       </nav>
     </aside>
   );

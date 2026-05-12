@@ -22,6 +22,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import Spinner from '../components/ui/Spinner';
 import { getPlatformCounts } from '../api/platform';
+import infovisionLogo from '../assets/Infovision_Logo.png';
 
 const COUNTS_CACHE_KEY = 'aimplify_login_platform_counts_v1';
 
@@ -30,7 +31,7 @@ function readPlatformCountsCache() {
     const raw = sessionStorage.getItem(COUNTS_CACHE_KEY);
     if (!raw) return null;
     const { rows, v } = JSON.parse(raw);
-    if (v !== 1 || !Array.isArray(rows)) return null;
+    if (v !== 2 || !Array.isArray(rows)) return null;
     return rows;
   } catch {
     return null;
@@ -39,7 +40,7 @@ function readPlatformCountsCache() {
 
 function writePlatformCountsCache(rows) {
   try {
-    sessionStorage.setItem(COUNTS_CACHE_KEY, JSON.stringify({ v: 1, rows }));
+    sessionStorage.setItem(COUNTS_CACHE_KEY, JSON.stringify({ v: 2, rows }));
   } catch {
     /* ignore quota / private mode */
   }
@@ -89,8 +90,71 @@ function flattenCountsPayload(obj) {
   return rows;
 }
 
+/**
+ * Use inner payload only when `{ data: { ...counts } }` wraps stats — not when `data` is the families array.
+ */
+function unwrapCountsResponse(res) {
+  const body = res?.data;
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return {};
+  if (body.data != null && typeof body.data === 'object' && !Array.isArray(body.data)) {
+    return body.data;
+  }
+  return body;
+}
+
+/** Map `/v1/platform/counts` body: totals + `data[]` families + generic numeric fields */
+function rowsFromPlatformCounts(body) {
+  if (!body || typeof body !== 'object' || Array.isArray(body)) return [];
+
+  const rows = [];
+  const seen = new Set();
+
+  const push = (id, label, value, tagline) => {
+    const n = coerceNumber(value);
+    if (n === null) return;
+    if (seen.has(id)) return;
+    seen.add(id);
+    const row = { id, label, value: n };
+    if (tagline) row.tagline = tagline;
+    rows.push(row);
+  };
+
+  const { totalFamilies, totalAssets, data, ...rest } = body;
+
+  push('totalFamilies', 'Total families', totalFamilies);
+  push('totalAssets', 'Total assets', totalAssets);
+
+  if (Array.isArray(data)) {
+    for (const item of data) {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+      const key = typeof item.key === 'string' ? item.key : '';
+      const id = key ? `family_${key}` : `family_${seen.size}`;
+      const label =
+        typeof item.name === 'string' && item.name.trim() ? item.name.trim() : humanizeLabel(key || id);
+      const tagline =
+        typeof item.tagline === 'string' && item.tagline.trim() ? item.tagline.trim() : '';
+      push(id, label, item.assetCount, tagline);
+    }
+  }
+
+  const extra = flattenCountsPayload(rest);
+  for (const r of extra) {
+    if (!seen.has(r.id)) {
+      rows.push(r);
+      seen.add(r.id);
+    }
+  }
+
+  return rows;
+}
+
 function iconForStatKey(keyId) {
   const k = keyId.toLowerCase();
+  if (k.includes('forge')) return GitPullRequest;
+  if (k.includes('atlas')) return Database;
+  if (k.includes('nexus')) return Box;
+  if (k.includes('relay')) return TrendingUp;
+  if (k.includes('sentinel')) return Shield;
   if (k.includes('asset')) return Package;
   if (k.includes('family')) return FolderSearch;
   if (k.includes('user') || k.includes('contributor')) return Users;
@@ -107,14 +171,17 @@ function iconForStatKey(keyId) {
 function StatCardSkeleton({ index }) {
   return (
     <div
-      className="rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-sm overflow-hidden motion-reduce:animate-none"
+      className="flex h-full min-h-[7.75rem] flex-col rounded-xl border border-slate-200/90 bg-white p-3 shadow-sm overflow-hidden motion-reduce:animate-none sm:min-h-[8rem] sm:p-3.5"
       aria-hidden
     >
-      <div className="h-10 w-10 rounded-xl bg-slate-200/70 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
-      <div className="mt-4 h-8 w-16 rounded-md bg-slate-200/60 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
-      <div className="mt-2 h-3 w-24 rounded bg-slate-200/55 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
+      <div className="h-8 w-8 rounded-lg bg-slate-200/70 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
+      <div className="mt-2 h-7 w-12 rounded-md bg-slate-200/60 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
+      <div className="mt-1.5 h-2.5 w-20 rounded bg-slate-200/55 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
+      <div className="mt-auto min-h-[2.25rem] pt-1">
+        <div className="h-2 w-full max-w-[6.5rem] rounded bg-slate-200/50 motion-safe:animate-[pulse_2s_ease-in-out_infinite]" />
+      </div>
       <div
-        className="mt-4 h-1 rounded-full bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 motion-safe:animate-[pulse_2s_ease-in-out_infinite]"
+        className="mt-2 h-0.5 rounded-full bg-gradient-to-r from-slate-100 via-slate-200 to-slate-100 motion-safe:animate-[pulse_2s_ease-in-out_infinite]"
         style={{ animationDelay: `${index * 120}ms` }}
       />
     </div>
@@ -133,22 +200,29 @@ function StatCard({ row, index }) {
 
   return (
     <article
-      className="group relative rounded-2xl border border-slate-200/90 bg-white p-4 sm:p-5 shadow-[0_4px_24px_-8px_rgba(15,23,42,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-sky-200/80 hover:shadow-[0_12px_40px_-12px_rgba(14,165,233,0.18)]"
+      className="group relative flex h-full min-h-[7.75rem] min-w-0 flex-col rounded-xl border border-slate-200/90 bg-white p-3 shadow-[0_2px_16px_-6px_rgba(15,23,42,0.08)] transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-sky-200/80 hover:shadow-[0_8px_28px_-10px_rgba(14,165,233,0.16)] sm:min-h-[8rem] sm:p-3.5"
       aria-label={`${row.label}: ${formatted}`}
     >
       <div
-        className={`inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${grad} text-white shadow-lg`}
+        className={`inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br ${grad} text-white shadow-md`}
       >
-        <Icon className="h-5 w-5" strokeWidth={1.75} aria-hidden />
+        <Icon className="h-4 w-4" strokeWidth={1.75} aria-hidden />
       </div>
-      <p className="mt-4 text-2xl sm:text-[1.65rem] font-bold tabular-nums tracking-tight text-slate-900">
+      <p className="mt-2 text-lg font-bold tabular-nums tracking-tight text-slate-900 sm:text-xl">
         {formatted}
       </p>
-      <p className="mt-1 text-[11px] sm:text-xs font-semibold uppercase tracking-[0.08em] text-slate-500 leading-snug">
+      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.07em] text-slate-500 leading-tight line-clamp-2">
         {row.label}
       </p>
+      <div className="mt-1 min-h-[2.25rem] flex-1">
+        {row.tagline ? (
+          <p className="text-[9px] sm:text-[10px] font-normal normal-case tracking-normal leading-snug text-slate-400 line-clamp-2">
+            {row.tagline}
+          </p>
+        ) : null}
+      </div>
       <div
-        className="pointer-events-none absolute inset-x-4 bottom-0 h-px bg-gradient-to-r from-transparent via-sky-200/60 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        className="pointer-events-none mt-1 h-px bg-gradient-to-r from-transparent via-sky-200/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         aria-hidden
       />
     </article>
@@ -180,8 +254,8 @@ const Login = () => {
     try {
       const res = await getPlatformCounts(signal ? { signal } : {});
       if (seq !== fetchSeq.current) return;
-      const inner = res?.data?.data ?? res?.data ?? {};
-      const rows = flattenCountsPayload(
+      const inner = unwrapCountsResponse(res);
+      const rows = rowsFromPlatformCounts(
         typeof inner === 'object' && inner !== null && !Array.isArray(inner) ? inner : {},
       );
       setCountsRows(rows);
@@ -236,9 +310,9 @@ const Login = () => {
       </div>
 
       <div className="relative mx-auto max-w-7xl px-4 pb-14 pt-10 sm:px-6 lg:px-10 lg:pb-16 lg:pt-12">
-        <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_min(100%,420px)] lg:gap-14 xl:gap-16">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_min(100%,420px)] lg:gap-12 xl:gap-14">
           {/* —— Marketing + stats —— */}
-          <div className="min-w-0">
+          <div className="min-w-0 pr-0 sm:pr-1">
             <header className="mb-8 lg:mb-10">
               <div className="flex flex-wrap items-start gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-600 to-brand-800 shadow-lg shadow-brand-700/25 ring-4 ring-white">
@@ -258,10 +332,10 @@ const Login = () => {
             </header>
 
             <section
-              className="rounded-3xl border border-slate-200/80 bg-white/70 p-5 shadow-[0_8px_40px_-20px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:p-6 lg:p-7"
+              className="rounded-3xl border border-slate-200/80 bg-white/70 p-4 shadow-[0_8px_40px_-20px_rgba(15,23,42,0.12)] backdrop-blur-sm sm:p-5 lg:p-6"
               aria-labelledby="platform-snapshot-heading"
             >
-              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3 sm:pb-3.5">
                 <div>
                   <h2
                     id="platform-snapshot-heading"
@@ -307,14 +381,14 @@ const Login = () => {
               )}
 
               <div
-                className="mt-5 grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3"
+                className="mt-4 grid grid-cols-2 gap-2 sm:gap-2.5 md:grid-cols-4 md:gap-3"
                 aria-busy={showSkeletonGrid}
                 aria-live="polite"
               >
                 {showSkeletonGrid ? (
-                  Array.from({ length: 6 }).map((_, i) => <StatCardSkeleton key={i} index={i} />)
+                  Array.from({ length: 8 }).map((_, i) => <StatCardSkeleton key={i} index={i} />)
                 ) : showEmptyCounts ? (
-                  <div className="col-span-2 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 py-12 text-center md:col-span-3">
+                  <div className="col-span-2 flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/80 py-10 text-center md:col-span-4">
                     <Database className="h-10 w-10 text-slate-300" strokeWidth={1.5} aria-hidden />
                     <p className="mt-3 text-sm font-semibold text-slate-600">No metrics in this response</p>
                     <p className="mt-1 max-w-sm px-4 text-xs text-slate-500">
@@ -331,9 +405,15 @@ const Login = () => {
           {/* —— Login card —— */}
           <div className="lg:pt-4">
             <div className="rounded-3xl border border-slate-200/90 bg-white p-7 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.16)] ring-1 ring-slate-900/[0.03] sm:p-9">
-              <div className="mb-8 text-center">
-                <p className="text-lg font-bold tracking-tight text-slate-900">Infovision</p>
-                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
+              <div className="mb-8 flex flex-col items-center text-center">
+                <img
+                  src={infovisionLogo}
+                  alt=""
+                  aria-hidden
+                  className="h-8 w-auto max-w-[200px] object-contain opacity-90 sm:h-9"
+                  draggable={false}
+                />
+                <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400">
                   Enterprise sign in
                 </p>
               </div>

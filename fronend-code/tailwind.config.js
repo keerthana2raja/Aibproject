@@ -87,8 +87,8 @@ export default {
         navy: { DEFAULT: "#111827" },
       },
       fontFamily: {
-        sans: ["Inter", "Segoe UI", "system-ui", "-apple-system", "sans-serif"],
-        display: ["Inter", "Segoe UI", "system-ui", "-apple-system", "sans-serif"],
+        sans: ["Poppins", "Segoe UI", "system-ui", "-apple-system", "sans-serif"],
+        display: ["Poppins", "Segoe UI", "system-ui", "-apple-system", "sans-serif"],
         mono: [
           "JetBrains Mono",
           "Fira Code",

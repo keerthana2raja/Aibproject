@@ -18,7 +18,7 @@ const PAGE_META = {
   '/pipeline': { title: 'Approval Pipeline', sub: 'Submission status and governance' },
   '/analytics': { title: 'Analytics', sub: 'Usage and deployment metrics' },
   '/settings': { title: 'Settings', sub: 'Preferences and access' },
-  '/help': { title: 'Help (Coming Soon)', sub: 'Documentation and support' },
+  '/help': { title: 'Help', sub: 'Documentation and support' },
 };
 
 function resolveMeta(pathname) {
@@ -139,7 +139,7 @@ const Topbar = ({ onMenuClick }) => {
           <p className="text-[11px] text-text-muted truncate hidden sm:block">{sub}</p>
         </div>
 
-        <div ref={searchRef} className="relative hidden md:flex flex-1 max-w-xs ml-4 lg:ml-8 min-w-0">
+        {location.pathname === '/dashboard' && <div ref={searchRef} className="relative hidden md:flex flex-1 max-w-xs ml-4 lg:ml-8 min-w-0">
           <div
             className={`flex items-center gap-2 w-full rounded-lg border px-3 py-2 text-left text-[12px] shadow-inner transition-colors ${
               showSearch
@@ -237,17 +237,19 @@ const Topbar = ({ onMenuClick }) => {
               ) : null}
             </div>
           )}
-        </div>
+        </div>}
 
-        <div className="flex items-center gap-2 ml-auto shrink-0">
-          <button
-            type="button"
-            className="md:hidden p-2 rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-muted shadow-sm"
-            onClick={() => navigate('/catalog')}
-            aria-label="Search catalog"
-          >
-            <Search className="w-4 h-4" />
-          </button>
+        <div className="flex items-center gap-2 sm:gap-3 ml-auto shrink-0">
+          {location.pathname === '/dashboard' && (
+            <button
+              type="button"
+              className="md:hidden p-2 rounded-lg border border-border bg-surface text-text-secondary hover:bg-surface-muted shadow-sm"
+              onClick={() => navigate('/catalog')}
+              aria-label="Search catalog"
+            >
+              <Search className="w-4 h-4" />
+            </button>
+          )}
 
           <div className="relative" ref={profileMenuRef}>
             <button

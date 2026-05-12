@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useSearch } from '../context/SearchContext';
 import { getDashboardStats, getPopularAssets, getDashboardActivity } from '../api/dashboard';
+import { searchSuggestions } from '../api/search';
 import ErrorState from '../components/ui/ErrorState';
 import PageLoader from '../components/ui/PageLoader';
 import CountUp from '../components/ui/CountUp';
@@ -188,6 +189,9 @@ const Dashboard = () => {
   // changes (location.key) don't trigger 3 parallel DB calls every time the
   // user navigates back to the dashboard within the TTL window.
   const lastFetchedAt = useRef(null);
+  const [searchResults, setSearchResults] = useState(null);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const searchDebounce = useRef(null);
 
   const load = useCallback(async (force = false) => {
     // Skip if fresh data is already in state and a forced refresh wasn't requested
@@ -229,6 +233,27 @@ const Dashboard = () => {
     return () => window.removeEventListener('aimplify:dashboard-refresh', onRefresh);
   }, [load]);
 
+  useEffect(() => {
+    clearTimeout(searchDebounce.current);
+    if (!searchQuery.trim()) {
+      setSearchResults(null);
+      setSearchLoading(false);
+      return;
+    }
+    setSearchLoading(true);
+    searchDebounce.current = setTimeout(async () => {
+      try {
+        const res = await searchSuggestions(searchQuery.trim());
+        setSearchResults(res.data?.data || { assets: [], families: [] });
+      } catch {
+        setSearchResults({ assets: [], families: [] });
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 300);
+    return () => clearTimeout(searchDebounce.current);
+  }, [searchQuery]);
+
   const chartMax = useMemo(() => {
     const vals = (stats?.families || []).map((f) => f.stats?.deploys ?? 0);
     return Math.max(...vals, 1);
@@ -243,21 +268,22 @@ const Dashboard = () => {
   }, [stats?.families]);
 
   const filteredFamilies = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return stats?.families || [];
-    }
-    const query = searchQuery.toLowerCase();
-    return (stats?.families || []).filter((f) =>
-      f.name.toLowerCase().includes(query) || f.key.toLowerCase().includes(query)
-    );
-  }, [stats?.families, searchQuery]);
+    if (!searchQuery.trim()) return stats?.families || [];
+    if (!searchResults) return [];
+    return searchResults.families.map((sf) => {
+      const full = (stats?.families || []).find((f) => f.key === sf.id);
+      return full ?? {
+        key: sf.id,
+        name: sf.name,
+        tagline: sf.tagline,
+        stats: { assets: 0, deploys: sf.deploys ?? 0, battleTested: 0, demoReady: 0 },
+      };
+    });
+  }, [stats?.families, searchQuery, searchResults]);
 
   const filteredStats = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return stats;
-    }
-    // Calculate aggregated stats for filtered families
-    const filtered = filteredFamilies.reduce(
+    if (!searchQuery.trim()) return stats;
+    const agg = filteredFamilies.reduce(
       (acc, f) => {
         acc.totalAssets += f.stats?.assets ?? 0;
         acc.battleTested += f.stats?.battleTested ?? 0;
@@ -265,23 +291,19 @@ const Dashboard = () => {
         acc.totalDeploys += f.stats?.deploys ?? 0;
         return acc;
       },
-      {
-        totalAssets: 0,
-        battleTested: 0,
-        demoReady: 0,
-        totalDeploys: 0,
-      }
+      { totalAssets: 0, battleTested: 0, demoReady: 0, totalDeploys: 0 }
     );
-    return { ...stats, ...filtered };
+    return { ...stats, ...agg };
   }, [stats, filteredFamilies, searchQuery]);
 
   const filteredPopularAssets = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return popular;
-    }
-    const filteredFamilyKeys = new Set(filteredFamilies.map((f) => f.key));
-    return popular.filter((a) => filteredFamilyKeys.has(a.family));
-  }, [popular, filteredFamilies, searchQuery]);
+    if (!searchQuery.trim()) return popular;
+    if (!searchResults) return [];
+    return searchResults.assets.map((sa) => {
+      const full = popular.find((p) => p.id === sa.id);
+      return full ?? { id: sa.id, name: sa.name, family: sa.family, stats: { deploys: 0 } };
+    });
+  }, [popular, searchQuery, searchResults]);
 
   const familyHint =
     stats?.familyCountDistinct != null
@@ -368,12 +390,12 @@ const Dashboard = () => {
             Catalog <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
-        {loading ? (
+        {loading || searchLoading ? (
           <PlatformFamilyTiles skeleton />
         ) : filteredFamilies?.length > 0 ? (
           <PlatformFamilyTiles families={filteredFamilies} onOpen={(key) => navigate(`/family/${key}`)} />
-        ) : stats?.families?.length > 0 && searchQuery.trim() ? (
-          <div className="px-4 py-6 text-[11px] text-text-muted">No families match "{searchQuery}"</div>
+        ) : searchQuery.trim() ? (
+          <div className="px-4 py-6 text-[11px] text-text-muted">No families found for "{searchQuery}"</div>
         ) : (
           <div className="px-4 py-6 text-[11px] text-text-muted">No platform family telemetry yet.</div>
         )}
@@ -442,7 +464,7 @@ const Dashboard = () => {
                 Catalog <ArrowUpRight className="w-3.5 h-3.5" />
               </button>
             </div>
-            {loading ? (
+            {loading || searchLoading ? (
               <div className="p-4 space-y-2">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div key={i} className="h-10 bg-surface-muted border border-border rounded-lg animate-pulse" />
@@ -450,7 +472,7 @@ const Dashboard = () => {
               </div>
             ) : filteredPopularAssets.length === 0 ? (
               <div className="px-4 py-6 text-[11px] text-text-muted">
-                {searchQuery.trim() ? 'No assets in matching families.' : 'No assets indexed.'}
+                {searchQuery.trim() ? `No assets found for "${searchQuery}".` : 'No assets indexed.'}
               </div>
             ) : (
               <div className="overflow-x-auto">
