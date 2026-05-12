@@ -9,6 +9,9 @@ const {
   attachDemoVideoToAsset,
 } = require("../services/assetService");
 const { uploadToBlob } = require("../utils/blobUpload");
+const cache = require("../utils/ttlCache");
+
+const STATS_TTL = 30_000; // 30 seconds
 
 // GET /assets
 const listAssets = asyncHandler(async (req, res) => {
@@ -18,8 +21,12 @@ const listAssets = asyncHandler(async (req, res) => {
 
 // GET /assets/stats
 const assetStats = asyncHandler(async (req, res) => {
-  const stats = await getAssetStats();
-  res.status(200).json({ success: true, data: stats });
+  let data = cache.get("assets:stats");
+  if (!data) {
+    data = await getAssetStats();
+    cache.set("assets:stats", data, STATS_TTL);
+  }
+  res.status(200).json({ success: true, data });
 });
 
 // GET /assets/:id
@@ -37,6 +44,13 @@ const assetsByFamily = asyncHandler(async (req, res) => {
 // POST /assets
 const createAsset = asyncHandler(async (req, res) => {
   const asset = await createCatalogAsset(req.body || {}, req.user || {});
+  // Bust all count/stats caches after a new asset is added
+  cache.del("assets:stats");
+  cache.del("dashboard:stats");
+  cache.del("platform:counts");
+  cache.del("platform:keys");
+  cache.delByPrefix("platform:family:");
+  cache.delByPrefix("families:");
   res.status(201).json({ success: true, data: asset });
 });
 

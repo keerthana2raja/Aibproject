@@ -872,16 +872,26 @@ exports.analyticsSummarySqlite = async () => {
   ]);
 
   const MONTH_NAMES = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  // Single query replacing 6 sequential round-trips
+  const trendRes = await db.execute({
+    sql: `SELECT strftime('%Y', date) AS yr, strftime('%m', date) AS mo, COUNT(*) AS c
+          FROM registrations
+          WHERE date >= date('now', '-5 months', 'start of month')
+          GROUP BY yr, mo
+          ORDER BY yr, mo`,
+    args: [],
+  });
+  const trendMap = {};
+  for (const row of trendRes.rows) {
+    trendMap[`${row.yr}-${row.mo}`] = Number(row.c || 0);
+  }
   const now = new Date();
   const trend = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const r = await db.execute({
-      sql: `SELECT COUNT(*) AS c FROM registrations
-            WHERE CAST(strftime('%Y', date) AS INT)=? AND CAST(strftime('%m', date) AS INT)=?`,
-      args: [d.getFullYear(), d.getMonth() + 1],
-    });
-    trend.push({ month: MONTH_NAMES[d.getMonth()], count: Number(r.rows[0]?.c || 0) });
+    const yr = String(d.getFullYear());
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    trend.push({ month: MONTH_NAMES[d.getMonth()], count: trendMap[`${yr}-${mo}`] || 0 });
   }
 
   return {

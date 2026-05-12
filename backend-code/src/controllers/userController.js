@@ -6,7 +6,7 @@ const sqlite = require("../services/sqliteService");
 const getProfile = asyncHandler(async (req, res) => {
   let pendingCount;
   if (isSqliteMode()) {
-    pendingCount = sqlite.pendingSubmissionCountSqlite();
+    pendingCount = await sqlite.pendingSubmissionCountSqlite();
   } else {
     pendingCount = await Registration.countDocuments({
       status: { $in: ["ai-review", "governance", "remediation"] },

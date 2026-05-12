@@ -18,6 +18,7 @@ function getDb() {
       url: process.env.TURSO_DATABASE_URL,
       authToken: process.env.TURSO_AUTH_TOKEN.trim(),
       intMode: "number",
+      fetchOptions: { signal: AbortSignal.timeout(8000) }, // ⏱ 8 s hard timeout per query
     });
   }
   return _client;
@@ -39,6 +40,13 @@ async function runSchema(db) {
     `CREATE INDEX IF NOT EXISTS idx_assets_family ON assets(family)`,
     `CREATE INDEX IF NOT EXISTS idx_registrations_status ON registrations(status)`,
     `CREATE INDEX IF NOT EXISTS idx_activities_created ON activities(createdAt)`,
+    // Performance indexes — cover all ORDER BY / WHERE columns used in hot queries
+    `CREATE INDEX IF NOT EXISTS idx_assets_deploys ON assets(stats_deploys DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_assets_demoready ON assets(demoReady)`,
+    `CREATE INDEX IF NOT EXISTS idx_assets_maturity ON assets(maturity)`,
+    `CREATE INDEX IF NOT EXISTS idx_assets_submission ON assets(submission_status)`,
+    `CREATE INDEX IF NOT EXISTS idx_reg_date ON registrations(date DESC)`,
+    `CREATE INDEX IF NOT EXISTS idx_reg_submitter ON registrations(submitedBy)`,
   ];
   for (const sql of stmts) {
     try { await db.execute(sql); } catch(e) { /* ignore if exists */ }
@@ -115,14 +123,17 @@ async function initSqlite() {
   if (_initialized) return getDb();
   const db = getDb();
   await runSchema(db);
-  await migrateCatalogMasterSchema(db);
-  await migrateExtras(db);
-  // Demo seed disabled — real data is loaded via seed.js
-  // const { applyCanonicalDemoUpserts } = require("../data/sqliteSeedDemo");
-  // await applyCanonicalDemoUpserts(db);
+  // Run independent migration steps in parallel — saves 2+ round-trip RTTs on cold start
+  await Promise.all([
+    migrateCatalogMasterSchema(db),
+    migrateExtras(db),
+  ]);
   await backfillMasterIds(db);
-  try { await require("../services/sqliteService").recomputeAllFamilyStatsSqlite(); } catch(e) { console.warn("Stats reconcile skipped:", e.message); }
   await seedUsersIfEmpty(db);
+  // Fire-and-forget: family stats are cosmetic counts, must not block the first request
+  require("../services/sqliteService")
+    .recomputeAllFamilyStatsSqlite()
+    .catch((e) => console.warn("Stats reconcile skipped:", e.message));
   _initialized = true;
   console.log("✅ SQLite/Turso ready.");
   return db;

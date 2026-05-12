@@ -54,13 +54,13 @@ const loginUser = async (email, password) => {
     };
   }
 
-  await logActivity({
+  // Fire-and-forget: don't delay the login response for a DB write
+  logActivity({
     actorName: userPayload.name,
     action: "login",
     resourceType: "auth",
     description: email,
-    summary: `${email} logged in`,
-  });
+  }).catch((e) => console.error("Activity log failed (login):", e.message));
 
   return {
     access_token: generateAccessToken(userPayload),

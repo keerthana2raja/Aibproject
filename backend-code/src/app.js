@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const compression = require("compression");
 const swaggerUi = require("swagger-ui-express");
 const swaggerDocument = require("./config/swagger.json");
 const { notFound, errorHandler } = require("./middleware/errorMiddleware");
@@ -20,6 +21,7 @@ const platformRoutes = require("./routes/platformRoutes");
 const { isSqliteMode } = require("./config/sqlite");
 
 const app = express();
+app.use(compression()); // gzip all API responses
 
 app.use(
   cors({
