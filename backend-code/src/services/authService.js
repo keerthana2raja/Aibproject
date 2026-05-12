@@ -1,4 +1,5 @@
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 const Activity = require("../models/activity");
 const { isSqliteMode } = require("../config/sqlite");
 const sqlite = require("./sqliteService");
@@ -23,6 +24,13 @@ const loginUser = async (email, password) => {
     const row = await sqlite.userByEmailSqlite(email.trim());
     if (!row) {
       throw { statusCode: 403, message: "Access denied. You are not registered as an authorized user." };
+    }
+    // Verify password if the user has one set
+    if (row.password) {
+      const isMatch = await bcrypt.compare(password, row.password);
+      if (!isMatch) {
+        throw { statusCode: 401, message: "The credentials do not match. Please check your email and password." };
+      }
     }
     userPayload = {
       id: email.toLowerCase(),
