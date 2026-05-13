@@ -139,8 +139,10 @@ function StatCard({ row }) {
       className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.08] px-4 py-8 hover:bg-white/[0.13] transition-all duration-200 cursor-default"
       aria-label={`${row.label}: ${formatted}`}
     >
-      <p className={`text-4xl font-bold tabular-nums ${style.num} leading-none`}>{formatted}</p>
-      <p className="mt-3 text-[11px] font-bold uppercase tracking-widest text-white/50 text-center">
+      {/* ↑ Increased number size: text-4xl → text-5xl */}
+      <p className={`text-5xl font-bold tabular-nums ${style.num} leading-none`}>{formatted}</p>
+      {/* ↑ Increased label size: text-[11px] → text-[13px] */}
+      <p className="mt-3 text-[13px] font-bold uppercase tracking-widest text-white/50 text-center">
         {row.label.replace(/^Family\s+/i, '')}
       </p>
     </article>
@@ -230,16 +232,20 @@ const Login = () => {
               <Layers className="h-8 w-8 text-white" strokeWidth={1.6} />
             </div>
             <div>
-              <p className="text-[22px] font-extrabold tracking-tight text-white leading-none">AIMPLIFY</p>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 mt-1">by InfoVision</p>
+              {/* ↑ Increased: text-[22px] → text-[26px] */}
+              <p className="text-[26px] font-extrabold tracking-tight text-white leading-none">AIMPLIFY</p>
+              {/* ↑ Increased: text-[11px] → text-[13px] */}
+              <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-white/70 mt-1">by InfoVision</p>
             </div>
           </div>
 
-          {/* Headline */}
-          <h1 className="text-[3rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[3.5rem]">
+          {/* Headline — ↑ Increased: text-[3rem]/text-[3.5rem] → text-[3.8rem]/text-[4.2rem] */}
+          <h1 className="text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[4.2rem]">
             AI Capabilities &amp;<br />Accelerator Platform
           </h1>
-          <p className="mt-6 max-w-md text-base leading-relaxed text-white/80">
+
+          {/* Description — ↑ Increased: text-base → text-lg */}
+          <p className="mt-6 max-w-md text-lg leading-relaxed text-white/80">
             Discover, deploy, and demonstrate InfoVision&apos;s AI assets — from prompt
             libraries and agent patterns to production-ready accelerators.
           </p>
@@ -247,14 +253,15 @@ const Login = () => {
           {/* Platform families */}
           <section className="mt-14" aria-labelledby="snapshot-heading">
             <div className="flex items-center justify-between mb-5">
-              <h2 id="snapshot-heading" className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
+              {/* ↑ Increased: text-[11px] → text-[13px] */}
+              <h2 id="snapshot-heading" className="text-[13px] font-bold uppercase tracking-[0.2em] text-white/70">
                 Platform Families
               </h2>
               <button
                 type="button"
                 onClick={() => void fetchCounts(undefined, { silent: false })}
                 disabled={countsLoading}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white/60 hover:bg-white/20 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white/60 hover:bg-white/20 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 <RefreshCw className={`h-3 w-3 ${countsLoading ? 'animate-spin' : ''}`} strokeWidth={2.5} aria-hidden />
                 Refresh
@@ -262,7 +269,7 @@ const Login = () => {
             </div>
 
             {countsError && (
-              <div role="alert" className="mb-3 flex gap-2 rounded-lg bg-white/10 px-3 py-2 text-xs text-white/90">
+              <div role="alert" className="mb-3 flex gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm text-white/90">
                 <AlertCircle className="h-4 w-4 shrink-0 text-white mt-0.5" strokeWidth={2} />
                 <span>{countsError}</span>
               </div>
@@ -279,8 +286,8 @@ const Login = () => {
           </section>
         </div>
 
-        {/* bottom copyright */}
-        <p className="relative mt-10 text-[11px] text-white/40 font-medium">
+        {/* bottom copyright — ↑ Increased: text-[11px] → text-[13px] */}
+        <p className="relative mt-10 text-[13px] text-white/40 font-medium">
           © 2026 InfoVision, Inc. All rights reserved.
         </p>
       </div>
@@ -294,7 +301,7 @@ const Login = () => {
           {/* Card */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] overflow-hidden">
 
-            {/* Card header — seamless white, no bg strip */}
+            {/* Card header */}
             <div className="bg-white px-8 pt-8 pb-5 text-center">
               <img
                 src={infovisionLogo}
@@ -302,7 +309,8 @@ const Login = () => {
                 className="mx-auto h-14 w-auto max-w-[220px] object-contain"
                 draggable={false}
               />
-              <p className="mt-3 text-[9px] font-bold uppercase tracking-[0.25em] text-slate-400">
+              {/* ↑ Increased: text-[9px] → text-[11px] */}
+              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">
                 Enterprise Sign In
               </p>
               <div className="mt-5 border-t border-slate-100" />
@@ -310,22 +318,27 @@ const Login = () => {
 
             {/* Form body */}
             <div className="px-8 pt-6 pb-7">
-              <h2 className="text-[20px] font-bold text-slate-900 leading-none">Welcome back</h2>
-              <p className="mt-1.5 text-[13px] text-slate-500">Use your InfoVision credentials to continue</p>
+              {/* ↑ Increased: text-[20px] → text-[26px] */}
+              <h2 className="text-[26px] font-bold text-slate-900 leading-none">Sign in</h2>
+              {/* ↑ Increased: text-[13px] → text-[15px] */}
+              <p className="mt-1.5 text-[15px] text-slate-500">Use your InfoVision credentials</p>
 
               {error && (
                 <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3" role="alert">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" strokeWidth={2} />
-                  <span className="text-[12.5px] text-red-800 leading-snug">{error}</span>
+                  {/* ↑ Increased: text-[12.5px] → text-[14px] */}
+                  <span className="text-[14px] text-red-800 leading-snug">{error}</span>
                 </div>
               )}
 
               <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
                 {/* Email */}
                 <div>
-                  <label htmlFor="login-email" className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
-                    Email address
+                  {/* ↑ Increased: text-[10.5px] → text-[13px], removed uppercase/tracking for natural look like Image 2 */}
+                  <label htmlFor="login-email" className="mb-1.5 block text-[13px] font-semibold text-slate-600">
+                    Email
                   </label>
+                  {/* ↑ Increased: text-[13.5px] → text-[15px] */}
                   <input
                     id="login-email"
                     type="email"
@@ -333,16 +346,18 @@ const Login = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@infovision.com"
                     autoComplete="email"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-[13.5px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
                   />
                 </div>
 
                 {/* Password */}
                 <div>
-                  <label htmlFor="login-password" className="mb-1.5 block text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
+                  {/* ↑ Increased: text-[10.5px] → text-[13px], removed uppercase/tracking */}
+                  <label htmlFor="login-password" className="mb-1.5 block text-[13px] font-semibold text-slate-600">
                     Password
                   </label>
                   <div className="relative">
+                    {/* ↑ Increased: text-[13.5px] → text-[15px] */}
                     <input
                       id="login-password"
                       type={showPwd ? 'text' : 'password'}
@@ -350,7 +365,7 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password"
                       autoComplete="current-password"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 pr-11 text-[13.5px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 pr-11 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
                     />
                     <button
                       type="button"
@@ -366,11 +381,11 @@ const Login = () => {
                   </div>
                 </div>
 
-                {/* Submit */}
+                {/* Submit — ↑ Increased: text-[14px] → text-[16px] */}
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="group w-full rounded-xl bg-brand-600 py-3.5 text-[14px] font-semibold text-white shadow-sm hover:bg-brand-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
+                  className="group w-full rounded-xl bg-brand-600 py-3.5 text-[16px] font-semibold text-white shadow-sm hover:bg-brand-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
                 >
                   {authLoading ? (
                     <>
@@ -386,7 +401,8 @@ const Login = () => {
                 </button>
               </form>
 
-              <p className="mt-5 text-center text-[12px] text-slate-400">
+              {/* ↑ Increased: text-[12px] → text-[14px] */}
+              <p className="mt-5 text-center text-[14px] text-slate-400">
                 Access issues?{' '}
                 <a href="mailto:it@infovision.com" className="font-semibold text-brand-600 hover:text-brand-700 hover:underline underline-offset-2 transition-colors">
                   Contact IT
@@ -395,9 +411,9 @@ const Login = () => {
             </div>
           </div>
 
-          {/* sub-footer */}
-          <p className="mt-5 text-center text-[11px] text-slate-400">
-            Secure enterprise authentication · InfoVision 2026
+          {/* sub-footer — ↑ Increased: text-[11px] → text-[13px] */}
+          <p className="mt-5 text-center text-[13px] text-slate-400">
+            SSO via Microsoft Entra ID available
           </p>
         </div>
       </div>
