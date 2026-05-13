@@ -46,6 +46,9 @@ const assetSchema = new mongoose.Schema(
     /** Relative path under /v1/uploads (e.g. demos/ATL-001-123.mp4) */
     demoVideoRelpath: { type: String, trim: true, default: "" },
 
+    /** Public demo URL stored directly (e.g. from seed data or manual entry) */
+    demo_url: { type: String, trim: true, default: null },
+
     // swagger AssetDetail: "owner"
     owner: { type: String, trim: true },
 

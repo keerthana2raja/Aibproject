@@ -8,7 +8,7 @@ const { deleteBlob } = require("../utils/blobUpload");
 const sqlite = require("./sqliteService");
 
 const MONGO_LIST_FIELDS =
-  "id name desc family clouds maturity effort demoReady solution owner stats demoVideoRelpath";
+  "id name desc family clouds maturity effort demoReady solution owner stats demoVideoRelpath demo_url";
 
 function enrichMongoAssetLean(o) {
   if (!o) return o;
@@ -22,6 +22,7 @@ function enrichMongoAssetLean(o) {
   return {
     ...raw,
     demoVideoUrl,
+    demo_url: raw.demo_url || null,
     stats: { deploys: sd, stars: ss, demos: Number(demos) || 0 },
   };
 }
