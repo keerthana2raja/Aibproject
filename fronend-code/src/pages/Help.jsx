@@ -1,17 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
-  Search,
   BookOpen,
   Video,
   Terminal,
   MessageCircle,
-  Mail,
   ChevronDown,
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { searchSuggestions } from '../api/search';
 import { getHelp } from '../api/help';
-import Spinner from '../components/ui/Spinner';
 import PageLoader from '../components/ui/PageLoader';
 import ErrorState from '../components/ui/ErrorState';
 
@@ -26,7 +21,6 @@ const ICON_MAP = {
   video: Video,
   terminal: Terminal,
   message: MessageCircle,
-  mail: Mail,
 };
 
 const FaqItem = ({ question, answer }) => {
@@ -82,13 +76,8 @@ const Tile = ({ iconKey, title, subtitle, action, onSwagger }) => {
 };
 
 const Help = () => {
-  const navigate = useNavigate();
-  const [q, setQ] = useState('');
-  const [results, setResults] = useState(null);
-  const [searching, setSearching] = useState(false);
   const [helpPayload, setHelpPayload] = useState(null);
   const [helpError, setHelpError] = useState(null);
-  const debounceRef = useRef(null);
 
   const loadHelp = async () => {
     setHelpError(null);
@@ -105,35 +94,9 @@ const Help = () => {
     loadHelp();
   }, []);
 
-  useEffect(() => {
-    clearTimeout(debounceRef.current);
-    const t = q.trim();
-    if (!t) {
-      setResults(null);
-      setSearching(false);
-      return;
-    }
-    setSearching(true);
-    debounceRef.current = setTimeout(async () => {
-      try {
-        const res = await searchSuggestions(t);
-        setResults(res.data.data || { assets: [], families: [] });
-      } catch {
-        setResults({ assets: [], families: [], _error: true });
-      } finally {
-        setSearching(false);
-      }
-    }, 300);
-    return () => clearTimeout(debounceRef.current);
-  }, [q]);
-
   const openApiDocs = () => {
     window.open(`${window.location.origin}/api-docs`, '_blank', 'noopener,noreferrer');
   };
-
-  const hasHits =
-    results &&
-    ((results.assets && results.assets.length > 0) || (results.families && results.families.length > 0));
 
   if (!helpPayload && !helpError) {
     return <PageLoader message="Loading help…" />;
@@ -149,7 +112,6 @@ const Help = () => {
 
   const tiles = helpPayload?.resourceTiles || [];
   const faqs = helpPayload?.faqs || [];
-  const contact = helpPayload?.contact || { title: 'Contact', description: '', buttons: [] };
 
   return (
     <div className="p-3 lg:p-4 flex flex-col gap-4 flex-1 max-w-[960px] w-full mx-auto">
@@ -162,70 +124,6 @@ const Help = () => {
         </p>
       </div>
 
-      <div className="relative max-w-lg">
-        <Search
-          className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted"
-          strokeWidth={1.5}
-        />
-        <input
-          type="search"
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search catalog (assets & families from server)…"
-          className="w-full pl-8 pr-8 py-2 rounded-lg border border-border bg-surface text-[12px] outline-none focus:border-border-mid focus:ring-1 focus:ring-border-mid shadow-inner"
-        />
-        {searching && (
-          <div className="absolute right-2 top-1/2 -translate-y-1/2">
-            <Spinner size="sm" color="muted" />
-          </div>
-        )}
-      </div>
-
-      {q.trim() && !searching && results && (
-        <div className="card card-hover p-3 text-[11px] max-w-lg">
-          {results._error ? (
-            <span className="text-text-muted">Search unavailable. Ensure the API is running.</span>
-          ) : hasHits ? (
-            <ul className="space-y-1 divide-y divide-border">
-              {(results.assets || []).map((a) => (
-                <li key={a.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate(`/detail/${a.id}`);
-                      setQ('');
-                      setResults(null);
-                    }}
-                    className="w-full text-left py-2 hover:bg-surface-3 focus-ring"
-                  >
-                    <span className="font-mono text-[10px] text-text-secondary">{a.id}</span>
-                    <span className="block font-medium text-text-primary">{a.name}</span>
-                    <span className="text-text-muted capitalize">{a.family}</span>
-                  </button>
-                </li>
-              ))}
-              {(results.families || []).map((f) => (
-                <li key={f.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigate(`/family/${f.id}`);
-                      setQ('');
-                      setResults(null);
-                    }}
-                    className="w-full text-left py-2 hover:bg-surface-3 focus-ring"
-                  >
-                    <span className="font-semibold text-text-primary">{f.name}</span>
-                    <span className="block text-text-muted truncate">{f.tagline}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <span className="text-text-muted">No catalog matches.</span>
-          )}
-        </div>
-      )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
         {tiles.map((t, idx) => (
@@ -249,34 +147,6 @@ const Help = () => {
         ))}
       </div>
 
-      <div className="card card-hover p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div>
-          <div className="text-[12px] font-semibold text-text-primary">{contact.title}</div>
-          {contact.description ? (
-            <div className="text-[11px] text-text-muted mt-0.5">{helpDisplayText(contact.description)}</div>
-          ) : null}
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {(contact.buttons || []).map((b) => {
-            const BtnIcon = ICON_MAP[b.icon] || MessageCircle;
-            const primary = (b.variant || '').toLowerCase() === 'primary';
-            return (
-              <button
-                key={`${b.label}-${b.icon}`}
-                type="button"
-                className={
-                  primary
-                    ? 'inline-flex items-center gap-1.5 px-3 py-1.5 btn-primary'
-                    : 'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border bg-surface text-[12px] font-semibold text-text-secondary shadow-sm hover:bg-surface-3 focus-ring'
-                }
-              >
-                <BtnIcon className="w-3.5 h-3.5" strokeWidth={1.5} />
-                {b.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };
