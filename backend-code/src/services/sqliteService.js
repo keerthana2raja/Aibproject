@@ -29,6 +29,7 @@ function mapAssetRow(r) {
     demoReady: !!r.demoReady,
     solution: r.solution || "",
     demoVideoUrl: demoVideoUrlFromRelpath(rel || undefined),
+    demo_url: r.demo_url || null,
     owner: r.owner,
     ownerInitials: r.ownerInitials || "",
     architecture: r.architecture || "",
