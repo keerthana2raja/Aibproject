@@ -120,9 +120,9 @@ function rowsFromPlatformCounts(body) {
 /* ─── sub-components ─────────────────────────────────────── */
 function StatCardSkeleton() {
   return (
-    <div className="animate-pulse rounded-2xl bg-white/[0.08] px-4 py-8 flex flex-col items-center gap-3" aria-hidden>
-      <div className="h-10 w-10 rounded-md bg-white/10" />
-      <div className="h-3 w-16 rounded bg-white/10" />
+    <div className="animate-pulse rounded-xl bg-white/[0.08] px-2 py-3 flex flex-col items-center gap-2" aria-hidden>
+      <div className="h-6 w-8 rounded bg-white/10" />
+      <div className="h-2 w-10 rounded bg-white/10" />
     </div>
   );
 }
@@ -136,20 +136,18 @@ function StatCard({ row }) {
 
   return (
     <article
-      className="flex flex-col items-center justify-center rounded-2xl bg-white/[0.08] px-4 py-8 hover:bg-white/[0.13] transition-all duration-200 cursor-default"
+      className="flex flex-col items-center justify-center rounded-xl bg-white/[0.08] px-2 py-3 hover:bg-white/[0.13] transition-all duration-200 cursor-default"
       aria-label={`${row.label}: ${formatted}`}
     >
-      {/* ↑ Increased number size: text-4xl → text-5xl */}
-      <p className={`text-5xl font-bold tabular-nums ${style.num} leading-none`}>{formatted}</p>
-      {/* ↑ Increased label size: text-[11px] → text-[13px] */}
-      <p className="mt-3 text-[13px] font-bold uppercase tracking-widest text-white/50 text-center">
+      <p className={`text-2xl lg:text-3xl font-bold tabular-nums ${style.num} leading-none`}>{formatted}</p>
+      <p className="mt-1.5 text-[9px] lg:text-[10px] font-bold uppercase tracking-widest text-white/50 text-center">
         {row.label.replace(/^Family\s+/i, '')}
       </p>
     </article>
   );
 }
 
-/* ─── feature pills (left panel decoration) ─────────────── */
+/* ─── feature pills (unused but kept) ─────────────────────── */
 const FEATURES = [
   { icon: Zap,       label: 'Prompt Libraries'       },
   { icon: GitBranch, label: 'Agent Patterns'          },
@@ -220,48 +218,49 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row antialiased bg-brand-700">
+    /*
+     * Mobile/tablet (< lg):  flex-col, scroll allowed, compact blue header + login card
+     * Desktop (lg+):         flex-row, h-screen, overflow-hidden, full split layout
+     */
+    <div className="min-h-screen flex flex-col lg:h-screen lg:flex-row lg:overflow-hidden antialiased">
 
       {/* ══ LEFT — hero panel ════════════════════════════════ */}
-      <div className="relative flex flex-col justify-between overflow-hidden bg-brand-700 px-8 py-10 lg:w-[55%] lg:px-14 lg:py-14">
+      <div className="relative flex flex-col bg-brand-700 px-6 py-5 sm:px-8 sm:py-6 lg:w-[50%] lg:justify-between lg:px-10 lg:py-8 lg:overflow-hidden">
 
-        <div className="relative">
-          {/* Brand mark */}
-          <div className="flex items-center gap-4 mb-16">
-            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20">
-              <Layers className="h-8 w-8 text-white" strokeWidth={1.6} />
+        <div>
+          {/* Brand mark — always visible */}
+          <div className="flex items-center gap-3 mb-5 lg:mb-7">
+            <div className="flex h-10 w-10 lg:h-12 lg:w-12 shrink-0 items-center justify-center rounded-xl lg:rounded-2xl bg-white/20">
+              <Layers className="h-5 w-5 lg:h-6 lg:w-6 text-white" strokeWidth={1.6} />
             </div>
             <div>
-              {/* ↑ Increased: text-[22px] → text-[26px] */}
-              <p className="text-[26px] font-extrabold tracking-tight text-white leading-none">AIMPLIFY</p>
-              {/* ↑ Increased: text-[11px] → text-[13px] */}
-              <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-white/70 mt-1">by InfoVision</p>
+              <p className="text-[18px] lg:text-[22px] font-extrabold tracking-tight text-white leading-none">AIMPLIFY</p>
+              <p className="text-[10px] lg:text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70 mt-0.5">by InfoVision</p>
             </div>
           </div>
 
-          {/* Headline — ↑ Increased: text-[3rem]/text-[3.5rem] → text-[3.8rem]/text-[4.2rem] */}
-          <h1 className="text-[3.8rem] font-extrabold leading-[1.1] tracking-tight text-white sm:text-[4.2rem]">
+          {/* Headline — visible on all sizes, scales up */}
+          <h1 className="text-[1.9rem] sm:text-[2.4rem] md:text-[2.6rem] lg:text-[2.8rem] xl:text-[3.2rem] font-extrabold leading-[1.1] tracking-tight text-white">
             AI Capabilities &amp;<br />Accelerator Platform
           </h1>
 
-          {/* Description — ↑ Increased: text-base → text-lg */}
-          <p className="mt-6 max-w-md text-lg leading-relaxed text-white/80">
+          {/* Description — visible on sm+ */}
+          <p className="hidden sm:block mt-3 lg:mt-4 max-w-md text-[13px] md:text-[14px] lg:text-[15px] leading-relaxed text-white/80">
             Discover, deploy, and demonstrate InfoVision&apos;s AI assets — from prompt
             libraries and agent patterns to production-ready accelerators.
           </p>
 
-          {/* Platform families */}
-          <section className="mt-14" aria-labelledby="snapshot-heading">
-            <div className="flex items-center justify-between mb-5">
-              {/* ↑ Increased: text-[11px] → text-[13px] */}
-              <h2 id="snapshot-heading" className="text-[13px] font-bold uppercase tracking-[0.2em] text-white/70">
+          {/* Platform families — visible on md+ */}
+          <section className="hidden md:block mt-6 lg:mt-8" aria-labelledby="snapshot-heading">
+            <div className="flex items-center justify-between mb-3">
+              <h2 id="snapshot-heading" className="text-[11px] font-bold uppercase tracking-[0.2em] text-white/70">
                 Platform Families
               </h2>
               <button
                 type="button"
                 onClick={() => void fetchCounts(undefined, { silent: false })}
                 disabled={countsLoading}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 text-[13px] font-semibold text-white/60 hover:bg-white/20 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-white/10 px-2.5 py-1 text-[11px] font-semibold text-white/60 hover:bg-white/20 hover:text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all"
               >
                 <RefreshCw className={`h-3 w-3 ${countsLoading ? 'animate-spin' : ''}`} strokeWidth={2.5} aria-hidden />
                 Refresh
@@ -275,70 +274,64 @@ const Login = () => {
               </div>
             )}
 
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 sm:gap-4" aria-busy={showSkeletonGrid} aria-live="polite">
+            <div className="grid grid-cols-5 gap-2 xl:gap-3" aria-busy={showSkeletonGrid} aria-live="polite">
               {showSkeletonGrid
                 ? Array.from({ length: 5 }).map((_, i) => <StatCardSkeleton key={i} />)
                 : showEmptyCounts
-                  ? <div className="col-span-3 sm:col-span-5 py-6 text-center text-sm text-white/40">No platform data</div>
+                  ? <div className="col-span-5 py-4 text-center text-sm text-white/40">No platform data</div>
                   : displayRows.map((row) => <StatCard key={row.id} row={row} />)
               }
             </div>
           </section>
         </div>
 
-        {/* bottom copyright — ↑ Increased: text-[11px] → text-[13px] */}
-        <p className="relative mt-10 text-[13px] text-white/40 font-medium">
+        {/* Copyright — lg+ only */}
+        <p className="hidden lg:block mt-6 text-[11px] text-white/40 font-medium">
           © 2026 InfoVision, Inc. All rights reserved.
         </p>
       </div>
 
       {/* ══ RIGHT — login panel ══════════════════════════════ */}
-      <div className="flex flex-col items-center justify-center bg-[#f0f4f8] px-6 py-12 lg:w-[45%] lg:px-12">
+      <div className="flex flex-1 flex-col items-center justify-center bg-[#f0f4f8] px-4 py-8 sm:px-6 sm:py-10 lg:flex-none lg:w-[50%] lg:px-12 lg:py-6">
 
         <div
-          className={`w-full max-w-[400px] transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
+          className={`w-full max-w-[420px] sm:max-w-[480px] transition-all duration-500 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}
         >
           {/* Card */}
           <div className="rounded-2xl border border-slate-200 bg-white shadow-[0_8px_40px_-12px_rgba(15,23,42,0.12)] overflow-hidden">
 
             {/* Card header */}
-            <div className="bg-white px-8 pt-8 pb-5 text-center">
+            <div className="bg-white px-6 pt-6 pb-4 sm:px-8 sm:pt-7 sm:pb-5 text-center">
               <img
                 src={infovisionLogo}
                 alt="InfoVision"
-                className="mx-auto h-14 w-auto max-w-[220px] object-contain"
+                className="mx-auto h-9 sm:h-11 w-auto max-w-[160px] sm:max-w-[200px] object-contain"
                 draggable={false}
               />
-              {/* ↑ Increased: text-[9px] → text-[11px] */}
-              <p className="mt-3 text-[11px] font-bold uppercase tracking-[0.25em] text-slate-400">
+              <p className="mt-2 text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.25em] text-slate-400">
                 Enterprise Sign In
               </p>
-              <div className="mt-5 border-t border-slate-100" />
+              <div className="mt-3 sm:mt-4 border-t border-slate-100" />
             </div>
 
             {/* Form body */}
-            <div className="px-8 pt-6 pb-7">
-              {/* ↑ Increased: text-[20px] → text-[26px] */}
-              <h2 className="text-[26px] font-bold text-slate-900 leading-none">Sign in</h2>
-              {/* ↑ Increased: text-[13px] → text-[15px] */}
-              <p className="mt-1.5 text-[15px] text-slate-500">Use your InfoVision credentials</p>
+            <div className="px-6 pt-4 pb-6 sm:px-8 sm:pt-5 sm:pb-7">
+              <h2 className="text-[20px] sm:text-[22px] font-bold text-slate-900 leading-none">Sign in</h2>
+              <p className="mt-1 text-[12px] sm:text-[13px] text-slate-500">Use your InfoVision credentials</p>
 
               {error && (
-                <div className="mt-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3.5 py-3" role="alert">
+                <div className="mt-3 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-3 py-2.5" role="alert">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" strokeWidth={2} />
-                  {/* ↑ Increased: text-[12.5px] → text-[14px] */}
-                  <span className="text-[14px] text-red-800 leading-snug">{error}</span>
+                  <span className="text-[12px] sm:text-[13px] text-red-800 leading-snug">{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} noValidate className="mt-6 space-y-4">
+              <form onSubmit={handleSubmit} noValidate className="mt-4 sm:mt-5 space-y-3 sm:space-y-3.5">
                 {/* Email */}
                 <div>
-                  {/* ↑ Increased: text-[10.5px] → text-[13px], removed uppercase/tracking for natural look like Image 2 */}
-                  <label htmlFor="login-email" className="mb-1.5 block text-[13px] font-semibold text-slate-600">
+                  <label htmlFor="login-email" className="mb-1.5 block text-[11px] sm:text-[12px] font-semibold text-slate-600">
                     Email
                   </label>
-                  {/* ↑ Increased: text-[13.5px] → text-[15px] */}
                   <input
                     id="login-email"
                     type="email"
@@ -346,18 +339,16 @@ const Login = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="name@infovision.com"
                     autoComplete="email"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 text-[13px] sm:text-[14px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
                   />
                 </div>
 
                 {/* Password */}
                 <div>
-                  {/* ↑ Increased: text-[10.5px] → text-[13px], removed uppercase/tracking */}
-                  <label htmlFor="login-password" className="mb-1.5 block text-[13px] font-semibold text-slate-600">
+                  <label htmlFor="login-password" className="mb-1.5 block text-[11px] sm:text-[12px] font-semibold text-slate-600">
                     Password
                   </label>
                   <div className="relative">
-                    {/* ↑ Increased: text-[13.5px] → text-[15px] */}
                     <input
                       id="login-password"
                       type={showPwd ? 'text' : 'password'}
@@ -365,7 +356,7 @@ const Login = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Enter password"
                       autoComplete="current-password"
-                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3 pr-11 text-[15px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-2.5 pr-10 text-[13px] sm:text-[14px] text-slate-900 outline-none placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-500/10 transition-all duration-150"
                     />
                     <button
                       type="button"
@@ -381,11 +372,11 @@ const Login = () => {
                   </div>
                 </div>
 
-                {/* Submit — ↑ Increased: text-[14px] → text-[16px] */}
+                {/* Submit */}
                 <button
                   type="submit"
                   disabled={authLoading}
-                  className="group w-full rounded-xl bg-brand-600 py-3.5 text-[16px] font-semibold text-white shadow-sm hover:bg-brand-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
+                  className="group w-full rounded-xl bg-brand-600 py-2.5 sm:py-3 text-[14px] sm:text-[15px] font-semibold text-white shadow-sm hover:bg-brand-700 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-150 flex items-center justify-center gap-2"
                 >
                   {authLoading ? (
                     <>
@@ -401,8 +392,7 @@ const Login = () => {
                 </button>
               </form>
 
-              {/* ↑ Increased: text-[12px] → text-[14px] */}
-              <p className="mt-5 text-center text-[14px] text-slate-400">
+              <p className="mt-4 text-center text-[12px] sm:text-[13px] text-slate-400">
                 Access issues?{' '}
                 <a href="mailto:it@infovision.com" className="font-semibold text-brand-600 hover:text-brand-700 hover:underline underline-offset-2 transition-colors">
                   Contact IT
@@ -411,10 +401,6 @@ const Login = () => {
             </div>
           </div>
 
-          {/* sub-footer — ↑ Increased: text-[11px] → text-[13px] */}
-          <p className="mt-5 text-center text-[13px] text-slate-400">
-            SSO via Microsoft Entra ID available
-          </p>
         </div>
       </div>
     </div>
